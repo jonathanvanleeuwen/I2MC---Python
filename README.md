@@ -1,5 +1,5 @@
 # I2MC---Python
-I2MC implementation in Python 
+I2MC implementation in Python (Tested on version 3.6)
 
 
 For the original Matlab implementation see: https://github.com/royhessels/I2MC
