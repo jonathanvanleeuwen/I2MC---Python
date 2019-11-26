@@ -7,3 +7,8 @@ For the original Matlab implementation see: https://github.com/royhessels/I2MC
 
 
 For reference to the paper see: https://link.springer.com/article/10.3758/s13428-016-0822-1
+
+
+
+
+Due to slight differences in the implementation there might be some differences when compared to the Matlab version
