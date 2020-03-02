@@ -133,7 +133,7 @@ opt['downsampFilter'] = 0 # use chebychev filter when downsampling? 1: yes, 0: n
 
 # # FIXATION DETERMINATION
 opt['cutoffstd'] = 2.0 # number of standard deviations above mean k-means weights will be used as fixation cutoff
-opt['onoffsetThresh'] = 3 # number of MAD away from median fixation duration. Will be used to walk forward at fixation starts and backward at fixation ends to refine their placement and stop algorithm from eating into saccades
+opt['onoffsetThresh'] = 3.0 # number of MAD away from median fixation duration. Will be used to walk forward at fixation starts and backward at fixation ends to refine their placement and stop algorithm from eating into saccades
 opt['maxMergeDist'] = 30.0 # maximum Euclidean distance in pixels between fixations for merging
 opt['maxMergeTime'] = 30.0 # maximum time in ms between fixations for merging
 opt['minFixDur'] = 40.0 # minimum fixation duration after merging, fixations with shorter duration are removed from output
