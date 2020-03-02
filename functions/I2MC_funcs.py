@@ -544,7 +544,7 @@ def windowedInterpolate(xpos, ypos, missing, missStart, missEnd, edgesamples, de
         ypos[outWin]= steffenInterp(validsamps,validy,outWin)
         
         # update missing: hole is now plugged
-        missing[outWin] = True
+        missing[outWin] = False
     
     # plot interpolated data before 
     if dev:
@@ -952,7 +952,7 @@ def getFixations(finalweights, timestamp, xpos, ypos, missing, par):
 
     ### get boolean of fixations
     fixbool = finalweights < cutoff
-
+    
     ### get indices of where fixations start and end
     fixstart, fixend = bool2bounds(fixbool)
     
