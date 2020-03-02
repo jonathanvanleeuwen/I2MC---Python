@@ -19,7 +19,7 @@ Created on Thu Sep 19 10:57:23 2019
 # occur.
 # 
 # Cite as:
-# Hessels, R.S., Niehorster, D.C., Kemner, C., & Hooge, I.T.C., (2016).
+# Hessels, R.S., Niehorster, D.C., Kemner, C., & Hooge, I.T.C. (2016).
 # Noise-robust fixation detection in eye-movement data - Identification by 
 # 2-means clustering (I2MC). Behavior Research Methods.
 # 
@@ -58,7 +58,7 @@ Created on Thu Sep 19 10:57:23 2019
 # =============================================================================
 # List not inclusive 
 
-# Make sure that looping thorugh files works accuratly
+# Make sure that looping through files works accuratly
 # Make sure the plot code works
 
 
