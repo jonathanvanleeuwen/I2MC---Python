@@ -526,6 +526,8 @@ def windowedInterpolate(xpos, ypos, missing, missStart, missEnd, edgesamples, de
     --------
     >>>
     """
+    missingn = copy.deepcopy(missing)
+    
     # Do the interpolating
     for p in range(len(missStart)):
         # make vector of all samples in this window
@@ -533,7 +535,7 @@ def windowedInterpolate(xpos, ypos, missing, missStart, missEnd, edgesamples, de
     
         # get edge samples: where no missing data was observed
         # also get samples in window where data was observed
-        outWinNotMissing = np.invert(missing[outWin])
+        outWinNotMissing = np.invert(missingn[outWin])
         validsamps  = np.concatenate((outWin[0]+np.arange(-edgesamples,0), outWin[outWinNotMissing], outWin[-1]+np.arange(1,edgesamples+1)))
         
         # get valid values: where no missing data was observed
@@ -545,9 +547,9 @@ def windowedInterpolate(xpos, ypos, missing, missStart, missEnd, edgesamples, de
         ypos[outWin]= steffenInterp(validsamps,validy,outWin)
         
         # update missing: hole is now plugged
-        missing[outWin] = False
+        missingn[outWin] = False
     
-    # plot interpolated data before 
+    # plot interpolated data before (TODO, we didn't update this...)
     if dev:
         f, [ax1, ax2] = plt.subplots(2,1)
         ax1.plot(newX,xi, 'k-')
@@ -557,7 +559,7 @@ def windowedInterpolate(xpos, ypos, missing, missStart, missEnd, edgesamples, de
         ax2.scatter(newX[notMissing], ypos[notMissing], s = 2, color = 'r')
         ax2.scatter(newX[missing], yi[missing], s = 25, color = 'b')
 
-    return xpos, ypos, missing
+    return xpos, ypos, missingn
 
 # =============================================================================
 # interpolator
