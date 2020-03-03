@@ -16,6 +16,7 @@ from scipy.cluster.vq import kmeans2
 import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.patches as patches
+import copy
 
 # =============================================================================
 # # ToDo 
@@ -1269,7 +1270,7 @@ def I2MC(gazeData, options = {}):
     >>> 
     '''
     # set defaults
-    data = gazeData.copy()
+    data = copy.deepcopy(gazeData)
     opt = options.copy()
     par = {}
     
@@ -1458,6 +1459,6 @@ def I2MC(gazeData, options = {}):
     fix = getFixations(finalweights,data['time'],xpos,ypos,missing,par)
     fix = getFixStats(xpos,ypos,missing,pixperdeg,fix)
   
-    return fix
+    return fix,data,par
     
     

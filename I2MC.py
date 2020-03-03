@@ -80,7 +80,6 @@ import I2MC_funcs
 import plot_funcs as plot
 import matplotlib.pyplot as plt
 import time 
-import copy
 start = time.time()
 
 # =============================================================================
@@ -196,15 +195,14 @@ for foldIdx, folder in enumerate(allFolders):
             continue
         
         # RUN FIXATION DETECTION
-        oridata = copy.deepcopy(data)
-        fix = I2MC_funcs.I2MC(data,opt)
+        fix,_,_ = I2MC_funcs.I2MC(data,opt)
         
         if fix != False:
             ## PLOT RESULTS
             if opt['plotData']:
                 # pre-allocate name for saving file
                 saveFile = outFold + os.sep+  os.path.splitext(file)[0]+'.png'
-                f = I2MC_funcs.plotResults(oridata,fix,[opt['xres'], opt['yres']])
+                f = I2MC_funcs.plotResults(data,fix,[opt['xres'], opt['yres']])
                 # save figure and close
                 print('Saving image to: '+saveFile)
                 f.savefig(saveFile)
