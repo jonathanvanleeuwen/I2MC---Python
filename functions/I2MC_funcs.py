@@ -745,7 +745,7 @@ def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyO
     # idx for downsamples
     idxs = []
     for i in range(nd):
-        idxs.append(np.arange(nrsamples,0,-downsamples[i],dtype=int)[::-1] - 2)
+        idxs.append(np.arange(nrsamples,0,-downsamples[i],dtype=int)[::-1] - 1)
         
     # see where are missing in this data, for better running over the data
     # below.
@@ -777,7 +777,7 @@ def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyO
         i=0
 
     eind = i+nrsamples
-    while eind<=(len(xpos)-1):
+    while eind<=(len(xpos)):
         # check if max errors is crossed
         if counterrors > maxerrors:
             print('Too many empty clusters encountered, aborting file. \n')
@@ -849,22 +849,23 @@ def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyO
             # with missing. Move back if we just skipped some samples, or else
             # skip whole missing and place start of window and first next
             # non-missing.
-            if on[qWhichMiss][0] == (eind-stepsize+1):
+            if on[qWhichMiss][0] == (eind-stepsize):
                 # continue at first non-missing
                 i = off[qWhichMiss][0]+1
             else:
                 # we skipped some points, move window back so that we analyze
                 # up to first next missing point
                 i = on[qWhichMiss][0]-nrsamples
-            eind = i+nrsamples-1
-
-        if eind>=len(xpos) and eind-stepsize<=len(xpos):
+            eind = i+nrsamples
+            
+        if eind>len(xpos) and eind-stepsize<len(xpos):
             # we just exceeded data bound, but previous eind was before end of
             # data: we have some unprocessed samples. retreat just enough so we
             # process those end samples once
             d = eind-len(xpos)
             eind = eind-d
             i = i-d
+            
 
     # create final weights
     finalweights = totalweights/nrtests
@@ -1050,7 +1051,7 @@ def getFixations(finalweights, timestamp, xpos, ypos, missing, par):
     fixdur = endtime-starttime
     
     # then determine what duration of this last sample was
-    nextSamp = np.min(np.vstack([fixend+1,np.zeros(len(fixend),dtype=int)+len(timestamp)]),axis=0) # make sure we don't run off the end of the data
+    nextSamp = np.min(np.vstack([fixend+1,np.zeros(len(fixend),dtype=int)+len(timestamp)-1]),axis=0) # make sure we don't run off the end of the data
     extratime = timestamp[nextSamp]-timestamp[fixend] 
     
     # if last fixation ends at end of data, we need to determine how long that
