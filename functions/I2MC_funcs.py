@@ -342,16 +342,22 @@ def plotResults(data,fix,res=[1920,1080]):
     ax1.set_ylim([0, res[0]])
 
     ### Plot x position
-    for p in range(Xdat.shape[0]):
-        ax1.plot(time,Xdat[p,:],klr[p]+'-', linewidth = traceLW)
+    if len(Xdat.shape) > 1:
+        for p in range(Xdat.shape[0]):
+            ax1.plot(time,Xdat[p,:],klr[p]+'-', linewidth = traceLW)
+    else:
+        ax1.plot(time,Xdat,klr[0]+'-', linewidth = traceLW)
     
     ### Plot Y posiiton
     ax2 = plt.subplot(2,1,2,sharex=ax1)
     ax2.set_xlabel('Time (ms)')
     ax2.set_ylabel('Vertical position (pixels)', size = myLabelSize)
     ax2.set_ylim([0, res[1]])
-    for p in range(Ydat.shape[0]):
-        ax2.plot(time,Ydat[p,:],klr[p]+'-', linewidth = traceLW)
+    if len(Xdat.shape)  > 1:
+        for p in range(Ydat.shape[0]):
+            ax2.plot(time,Ydat[p,:],klr[p]+'-', linewidth = traceLW)
+    else:
+        ax2.plot(time,Ydat,klr[0]+'-', linewidth = traceLW)
         
     # add fixations, but adds a shaded area instead of line
     for b in range(len(fix['startT'])):
