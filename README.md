@@ -1,4 +1,4 @@
-# I2MC - Python implementation
+# Noise-robust fixation classification (I2MC) - Python implementation
 
 ## About I2MC
 
