@@ -467,12 +467,11 @@ def findInterpWins(xpos, ypos, missing, windowtime, edgesamples, freq, maxdisp):
         # previous missing too close
         # missing too close to end of data
         # next missing too close
-        if p != (len(missStart)-1):
-            if missStart[p]<edgesamples+1 or \
-                    (p>0 and missEnd[p-1] > missStart[p]-edgesamples-1) or \
-                    missEnd[p]>len(xpos)-edgesamples or \
-                    (p<len(missStart) and missStart[p+1] < missEnd[p]+edgesamples+1):
-                    qRemove[p] = True
+        if missStart[p]<edgesamples+1 or \
+            (p>0 and missEnd[p-1] > missStart[p]-edgesamples-1) or \
+            missEnd[p]>len(xpos)-edgesamples or \
+            (p<len(missStart)-1 and missStart[p+1] < missEnd[p]+edgesamples+1):
+            qRemove[p] = True
             continue
         
         # check displacement, per missing interval
