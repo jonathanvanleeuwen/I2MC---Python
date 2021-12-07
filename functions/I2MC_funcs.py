@@ -1215,13 +1215,13 @@ def getFixStats(xpos, ypos, missing, pixperdeg = None, fix = {}):
         # Distance and RMS measure
         c = xdif + ydif # 2D sample-to-sample displacement value in pixels
         RMSxy[a] = np.sqrt(np.mean(c))
-        if pixperdeg:
+        if pixperdeg is not None:
             RMSxy[a] = RMSxy[a]/pixperdeg # value in degrees visual angle
         
         ### calculate BCEA (Crossland and Rubin 2002 Optometry and Vision Science)
         stdx = np.std(xposf[np.invert(qMiss)])
         stdy = np.std(yposf[np.invert(qMiss)])
-        if pixperdeg:
+        if pixperdeg is not None:
             # value in degrees visual angle
             stdx = stdx/pixperdeg
             stdy = stdy/pixperdeg
@@ -1243,7 +1243,7 @@ def getFixStats(xpos, ypos, missing, pixperdeg = None, fix = {}):
             rangeX[a] = (np.max(xposf[np.invert(qMiss)]) - np.min(xposf[np.invert(qMiss)]))
             rangeY[a] = (np.max(yposf[np.invert(qMiss)]) - np.min(yposf[np.invert(qMiss)]))
 
-        if pixperdeg:
+        if pixperdeg is not None:
             # value in degrees visual angle
             rangeX[a] = rangeX[a]/pixperdeg;
             rangeY[a] = rangeY[a]/pixperdeg;
@@ -1295,25 +1295,25 @@ def I2MC(gazeData, options = {}):
     checkFun('missingy', opt, 'value indicating data loss for vertical position')
     
     # required parameters:
-    par['xres'] = opt.pop('xres', 1920.)
-    par['yres'] = opt.pop('yres', 1080.)
-    par['freq'] = opt.pop('freq', 300.)
-    par['missingx'] = opt.pop('missingx', -1920)
-    par['missingy'] = opt.pop('missingy', -1080)
-    par['scrSz'] = opt.pop('scrSz', [50.9174, 28.6411] ) # screen size (e.g. in cm). Optional, specify if want fixation statistics in deg
-    par['disttoscreen'] = opt.pop('disttoscreen', 65.0) # screen distance (in same unit as size). Optional, specify if want fixation statistics in deg
+    par['xres'] = opt.pop('xres')
+    par['yres'] = opt.pop('yres')
+    par['freq'] = opt.pop('freq')
+    par['missingx'] = opt.pop('missingx')
+    par['missingy'] = opt.pop('missingy')
+    par['scrSz'] = opt.pop('scrSz', None ) # screen size (e.g. in cm). Optional, specify if want fixation statistics in deg
+    par['disttoscreen'] = opt.pop('disttoscreen', None) # screen distance (in same unit as size). Optional, specify if want fixation statistics in deg
     
     #parameters with defaults:
     # CUBIC SPLINE INTERPOLATION
     par['windowtimeInterp'] = opt.pop('windowtimeInterp', .1) # max duration (s) of missing values for interpolation to occur
-    par['edgeSampInterp'] = opt.pop('edgeSampInterp', 2.) # amount of data (number of samples) at edges needed for interpolation
-    par['maxdisp'] = opt.pop('maxdisp',par['xres']*0.2*np.sqrt(2)) # maximum displacement during missing for interpolation to be possible
+    par['edgeSampInterp'] = opt.pop('edgeSampInterp', 2) # amount of data (number of samples) at edges needed for interpolation
+    par['maxdisp'] = opt.pop('maxdisp', None) # maximum displacement during missing for interpolation to be possible. Default set below if needed
     
     # K-MEANS CLUSTERING
     par['windowtime'] = opt.pop('windowtime', .2) # time window (s) over which to calculate 2-means clustering (choose value so that max. 1 saccade can occur)
     par['steptime'] = opt.pop('steptime', .02) # time window shift (s) for each iteration. Use zero for sample by sample processing
     par['downsamples'] = opt.pop('downsamples', [2, 5, 10]) # downsample levels (can be empty)
-    par['downsampFilter'] = opt.pop('downsampFilter', 1.) # use chebychev filter when downsampling? 1: yes, 0: no. requires signal processing toolbox. is what matlab's downsampling functions do, but could cause trouble (ringing) with the hard edges in eye-movement data
+    par['downsampFilter'] = opt.pop('downsampFilter', True) # use chebychev filter when downsampling? True: yes, False: no. requires signal processing toolbox. is what matlab's downsampling functions do, but could cause trouble (ringing) with the hard edges in eye-movement data
     par['chebyOrder'] = opt.pop('chebyOrder', 8.) # order of cheby1 Chebyshev downsampling filter, default is normally ok, as long as there are 25 or more samples in the window (you may have less if your data is of low sampling rate or your window is small
     par['maxerrors'] = opt.pop('maxerrors', 100.) # maximum number of errors allowed in k-means clustering procedure before proceeding to next file
     # FIXATION DETERMINATION
@@ -1327,6 +1327,9 @@ def I2MC(gazeData, options = {}):
     par['dev_interpolation'] = opt.pop('dev_interpolation', False)
     par['dev_cluster'] = opt.pop('dev_cluster', False)
     par['skip_inputhandeling'] = opt.pop('skip_inputhandeling', False)
+
+    for key in opt:
+        assert False, 'Key "{}" not recognized'.format(key)
     
     # =============================================================================
     # # Input handeling and checking
@@ -1334,33 +1337,41 @@ def I2MC(gazeData, options = {}):
     ## loop over input
     if not par['skip_inputhandeling']:
         for key, value in par.items():
-            if key in ['xres','yres','freq','missingx','missingy','disttoscreen','windowtimeInterp','maxdisp','windowtime','steptime','cutoffstd','onoffsetThresh','maxMergeDist','maxMergeTime','minFixDur']:
+            if key in ['xres','yres','freq','missingx','missingy','windowtimeInterp','maxdisp','windowtime','steptime','cutoffstd','onoffsetThresh','maxMergeDist','maxMergeTime','minFixDur']:
                 checkNumeric(key,value)
                 checkScalar(key,value)
+            elif key == 'disttoscreen':
+                if value is not None:   # may be none (its an optional parameter)
+                    checkNumeric(key,value)
+                    checkScalar(key,value)
             elif key in ['downsampFilter','chebyOrder','maxerrors','edgeSampInterp']:
                 checkInt(key,value)
                 checkScalar(key,value)
             elif key == 'scrSz':
-                checkNumeric(key,value)
-                checkNumel2(key,value)
+                if value is not None:   # may be none (its an optional parameter)
+                    checkNumeric(key,value)
+                    checkNumel2(key,value)
             elif key == 'downsamples':
                 checkInt(key,value)
             else:
                 if type(key) != str:
                     assert False, 'Key "{}" not recognized'.format(key)
-        
+    
+    # set defaults
+    if par['maxdisp'] is None:
+        par['maxdisp'] = par['xres']*0.2*np.sqrt(2)
+
     # check filter
     if par['downsampFilter']:
         nSampRequired = np.max([1,3*par['chebyOrder']])+1  # nSampRequired = max(1,3*(nfilt-1))+1, where nfilt = chebyOrder+1
         nSampInWin = round(par['windowtime']/(1./par['freq']))
         assert nSampInWin>=nSampRequired,'I2MCfunc: Filter parameters requested with the setting ''chebyOrder'' will not work for the sampling frequency of your data. Please lower ''chebyOrder'', or set the setting ''downsampFilter'' to 0'
    
-    np.sum(par['freq']%np.array(par['downsamples'])) !=0
     assert np.sum(par['freq']%np.array(par['downsamples'])) ==0,'I2MCfunc: Some of your downsample levels are not divisors of your sampling frequency. Change the option "downsamples"'
     
     # setup visual angle conversion
-    pixperdeg = []
-    if par['scrSz'] and par['disttoscreen']:
+    pixperdeg = None
+    if par['scrSz'] is not None and par['disttoscreen'] is not None:
         pixperdeg = angleToPixels(1, par['disttoscreen'], par['scrSz'][0], [par['xres'], par['yres']])
 
     # =============================================================================
