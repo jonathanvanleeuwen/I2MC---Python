@@ -807,10 +807,12 @@ def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyO
             else:
                 ll_d[p+1] = ll_d[0][:,idxs[p]]
         
-        # do 2-means clustering        
-        for p in range(nd+1):
-            IDL_d[p] = kmeans2(ll_d[p].T,2, 10, minit='points')            
-        
+        # do 2-means clustering
+        try:
+            for p in range(nd+1):
+                IDL_d[p] = kmeans2(ll_d[p].T,2, iter=100, minit='++', missing='raise')
+
+        except scipy.cluster.vq.ClusterError:
             # If an empty cluster error is encountered, try again next
             # iteration. This can occur particularly in long
             # fixations, as the number of clusters there should be 1,
@@ -822,6 +824,9 @@ def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyO
                 print('\t\tEmpty cluster error encountered (n={}/100). Trying again on next iteration.'.format(counterrors))
                 counterrors += 1
                 continue
+        except Exception as e:
+            print('Unknown error encountered at sample {}.\n'.format(i))
+            raise e
         
         # detect switches and weight of switch (= 1/number of switches in
         # portion)
