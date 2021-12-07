@@ -443,7 +443,7 @@ def findInterpWins(xpos, ypos, missing, windowtime, edgesamples, freq, maxdisp):
             datk = int(datk)
             if dataEnd[datk]-dataStart[datk]+1 < edgesamples:
                 missEnd = np.delete(missEnd, k)
-                missStart = np.delete(missStart, k)
+                missStart = np.delete(missStart, k+1)
                 
                 # don't advance k so we check this one again and grow it further if
                 # needed
