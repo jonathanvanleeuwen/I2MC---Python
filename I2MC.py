@@ -107,7 +107,7 @@ folders['data'] = os.path.join(dir_path,'example data') # folder in which data i
 folders['output'] = os.path.join(dir_path,'output')     # folder for output (will use structure in folders.data for saving output)
 
 # Plot results
-opt['plotData'] = True; # if set to True, plot of fixation detection for each trial will be saved as png-file in output folder.
+doPlotData = True   # if set to True, plot of fixation detection for each trial will be saved as png-file in output folder.
 # the figures works best for short trials (up to around 20 seconds)
 
 # =============================================================================
@@ -197,7 +197,7 @@ for foldIdx, folder in enumerate(allFolders):
         
         if fix != False:
             ## PLOT RESULTS
-            if opt['plotData']:
+            if doPlotData:
                 # pre-allocate name for saving file
                 saveFile = outFold + os.sep+  os.path.splitext(file)[0]+'.png'
                 f = I2MC_funcs.plotResults(data,fix,[opt['xres'], opt['yres']])
