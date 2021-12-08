@@ -1634,7 +1634,7 @@ def I2MC(gazeData, options = {}):
     # =============================================================================
     #  DETERMINE FIXATIONS BASED ON FINALWEIGHTS_AVG
     # =============================================================================
-    print('\tDetermining fixations based on clustering weight mean for averaged signal and separate eyes + {:.2f}*std',par['cutoffstd'])
+    print('\tDetermining fixations based on clustering weight mean for averaged signal and separate eyes + {:.2f}*std'.format(par['cutoffstd']))
     fix = getFixations(data['finalweights'],data['time'],xpos,ypos,missing,par)
     fix = getFixStats(xpos,ypos,missing,pixperdeg,fix)
   
