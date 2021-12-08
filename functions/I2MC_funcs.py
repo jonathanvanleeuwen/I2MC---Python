@@ -1117,7 +1117,7 @@ def getFixations(finalweights, timestamp, xpos, ypos, missing, par):
     minFixDur = par['minFixDur']
         
     ### first determine cutoff for finalweights
-    cutoff = np.nanmean(finalweights) + cutoffstd*np.nanstd(finalweights)
+    cutoff = np.nanmean(finalweights) + cutoffstd*np.nanstd(finalweights,ddof=1)
 
     ### get boolean of fixations
     fixbool = finalweights < cutoff
