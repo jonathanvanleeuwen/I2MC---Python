@@ -1446,7 +1446,7 @@ def I2MC(gazeData, options = {}):
     if not q2Eyes:        
         # get kmeans-clustering for averaged signal
         print('\t2-Means clustering started for averaged signal')
-        finalweights, stopped = twoClusterWeighting(xpos, ypos, missingn, par['downsamples'], par['downsampFilter'], par['chebyOrder'],par['windowtime'], par['steptime'],par['freq'],par['maxerrors'],par['dev_cluster'])
+        data['finalweights'], stopped = twoClusterWeighting(xpos, ypos, missingn, par['downsamples'], par['downsampFilter'], par['chebyOrder'],par['windowtime'], par['steptime'],par['freq'],par['maxerrors'],par['dev_cluster'])
         
         # check whether clustering succeeded
         if stopped:
@@ -1474,13 +1474,13 @@ def I2MC(gazeData, options = {}):
             return False
         
         ## AVERAGE FINALWEIGHTS OVER COMBINED & SEPARATE EYES
-        finalweights = np.nanmean(np.vstack([finalweights_left, finalweights_right]), axis=0)
+        data['finalweights'] = np.nanmean(np.vstack([finalweights_left, finalweights_right]), axis=0)
     
     # =============================================================================
     #  DETERMINE FIXATIONS BASED ON FINALWEIGHTS_AVG
     # =============================================================================
-    print('\tDetermining fixations based on clustering weight mean for averaged signal and separate eyes + 2*std')      
-    fix = getFixations(finalweights,data['time'],xpos,ypos,missing,par)
+    print('\tDetermining fixations based on clustering weight mean for averaged signal and separate eyes + {:.2f}*std',par['cutoffstd'])
+    fix = getFixations(data['finalweights'],data['time'],xpos,ypos,missing,par)
     fix = getFixStats(xpos,ypos,missing,pixperdeg,fix)
   
     return fix,data,par
