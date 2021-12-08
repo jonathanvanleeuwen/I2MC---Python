@@ -1129,8 +1129,8 @@ def getFixations(finalweights, timestamp, xpos, ypos, missing, par):
     # a threshold of lambda*MAD away from median fixation position.
     # same for each fixation end, but walk backward
     for p in range(len(fixstart)):
-        xFix = xpos[fixstart[p]:fixend[p]]
-        yFix = ypos[fixstart[p]:fixend[p]]
+        xFix = xpos[fixstart[p]:fixend[p]+1]
+        yFix = ypos[fixstart[p]:fixend[p]+1]
         xmedThis = np.nanmedian(xFix)
         ymedThis = np.nanmedian(yFix)
         
@@ -1163,10 +1163,10 @@ def getFixations(finalweights, timestamp, xpos, ypos, missing, par):
     ### loop over all fixation candidates in trial, see if should be merged
     for p in range(1,len(starttime))[::-1]:
         # get median coordinates of fixation
-        xmedThis = np.median(xpos[fixstart[p]:fixend[p]])
-        ymedThis = np.median(ypos[fixstart[p]:fixend[p]])
-        xmedPrev = np.median(xpos[fixstart[p-1]:fixend[p-1]]);
-        ymedPrev = np.median(ypos[fixstart[p-1]:fixend[p-1]]);
+        xmedThis = np.median(xpos[fixstart[p]:fixend[p]+1])
+        ymedThis = np.median(ypos[fixstart[p]:fixend[p]+1])
+        xmedPrev = np.median(xpos[fixstart[p-1]:fixend[p-1]+1]);
+        ymedPrev = np.median(ypos[fixstart[p-1]:fixend[p-1]+1]);
         
         # check if fixations close enough in time and space and thus qualify
         # for merging
@@ -1174,7 +1174,7 @@ def getFixations(finalweights, timestamp, xpos, ypos, missing, par):
         # notes about fixation duration below), i checked this carefully. (Both
         # start and end of the interval are shifted by one sample in time, but
         # assuming practicalyl constant sample interval, thats not an issue.)
-        if starttime[p]- endtime[p-1] < maxMergeTime and \
+        if starttime[p]-endtime[p-1] < maxMergeTime and \
             np.hypot(xmedThis-xmedPrev,ymedThis-ymedPrev) < maxMergeDist:
             # merge
             fixend[p-1] = fixend[p];
@@ -1189,7 +1189,7 @@ def getFixations(finalweights, timestamp, xpos, ypos, missing, par):
     # If interpolated, those bit(s) at the edge(s) are excluded from the
     # fixation. First throw out fixations that are all missing/interpolated
     for p in range(len(starttime))[::-1]:
-        miss = missing[fixstart[p]:fixend[p]]
+        miss = missing[fixstart[p]:fixend[p]+1]
         if np.sum(miss) == len(miss):
             fixstart = np.delete(fixstart, p)
             fixend = np.delete(fixend, p)
@@ -1199,10 +1199,10 @@ def getFixations(finalweights, timestamp, xpos, ypos, missing, par):
     # then check edges and shrink if needed
     for p in range(len(starttime)):
         if missing[fixstart[p]]:
-            fixstart[p] = fixstart[p] + np.argmax(np.invert(missing[fixstart[p]:fixend[p]]))
+            fixstart[p] = fixstart[p] + np.argmax(np.invert(missing[fixstart[p]:fixend[p]+1]))
             starttime[p]= timestamp[fixstart[p]]
         if missing[fixend[p]]:
-            fixend[p] = fixend[p] - (np.argmax(np.invert(missing[fixstart[p]:fixend[p]][::-1]))+1)
+            fixend[p] = fixend[p] - (np.argmax(np.invert(missing[fixstart[p]:fixend[p]+1][::-1]))+1)
             endtime[p] = timestamp[fixend[p]]
     
     ### calculate fixation duration
@@ -1244,7 +1244,7 @@ def getFixations(finalweights, timestamp, xpos, ypos, missing, par):
     flankdataloss = np.zeros(fixstart.shape) # vector for whether fixation is flanked by data loss
     fracinterped = np.zeros(fixstart.shape) # vector for fraction interpolated
     for a in range(len(fixstart)):
-        idxs = range(fixstart[a],fixend[a])
+        idxs = range(fixstart[a],fixend[a]+1)
         # get data during fixation
         xposf = xpos[idxs]
         yposf = ypos[idxs]
@@ -1345,7 +1345,7 @@ def getFixStats(xpos, ypos, missing, pixperdeg = None, fix = {}):
     rangeY = np.zeros(fstart.shape)
 
     for a in range(len(fstart)):
-        idxs = range(fstart[a],fend[a])
+        idxs = range(fstart[a],fend[a]+1)
         # get data during fixation
         xposf = xpos[idxs]
         yposf = ypos[idxs]
