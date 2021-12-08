@@ -9,14 +9,17 @@ Created on Thu Sep 19 10:54:00 2019
 # Import libraries
 # =============================================================================
 import numpy as np
+import math
 import scipy
 import scipy.interpolate as interp
 import scipy.signal
-from scipy.cluster.vq import kmeans2
+from scipy.cluster.vq import vq, _vq
+from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.patches as patches
 import copy
+import warnings
 
 # =============================================================================
 # # ToDo 
@@ -682,6 +685,171 @@ def steffenInterp(x, y, xi):
 # =============================================================================
 # Clustering functions
 # =============================================================================
+def kmeans2(data):
+    # n points in p dimensional space
+    n = data.shape[0]
+
+    maxit = 100
+
+    ## initialize using kmeans++ method.
+    # code taken and slightly edited from scipy.cluster.vq
+    dims = data.shape[1] if len(data.shape) > 1 else 1
+    C = np.ndarray((2, dims))
+    
+    # first cluster
+    C[0, :] = data[np.random.randint(data.shape[0])]
+
+    # second cluster
+    D = cdist(C[:1,:], data, metric='sqeuclidean').min(axis=0)
+    probs = D/D.sum()
+    cumprobs = probs.cumsum()
+    r = np.random.rand()
+    C[1, :] = data[np.searchsorted(cumprobs, r)]
+
+    # Compute the distance from every point to each cluster centroid and the
+    # initial assignment of points to clusters
+    D = cdist(C, data, metric='sqeuclidean')
+    # Compute the nearest neighbor for each obs using the current code book
+    label = vq(data, C)[0]
+    # Update the code book by computing centroids
+    C = _vq.update_cluster_means(data, label, 2)[0]
+    m = np.bincount(label)
+
+    ## Begin phase one:  batch reassignments
+    #-----------------------------------------------------
+    # Every point moved, every cluster will need an update
+    prevtotsumD = math.inf
+    iter = 0
+    while True:
+        iter += 1
+        # Calculate the new cluster centroids and counts, and update the
+        # distance from every point to those new cluster centroids
+        Clast = C;
+        mlast = m;
+        D = cdist(C, data, metric='sqeuclidean')
+
+        # Deal with clusters that have just lost all their members
+        if np.any(m==0):
+            i = np.argwhere(m==0)
+            d = D[[label],[range(n)]]   # use newly updated distances
+        
+            # Find the point furthest away from its current cluster.
+            # Take that point out of its cluster and use it to create
+            # a new singleton cluster to replace the empty one.
+            lonely = np.argmax(d)
+            cFrom = label[lonely]    # taking from this cluster
+            if m[cFrom] < 2:
+                # In the very unusual event that the cluster had only
+                # one member, pick any other non-singleton point.
+                cFrom = np.argwhere(m>1)[0]
+                lonely = np.argwhere(mlabel==cFrom)[0]
+            end
+            label[lonely] = i
+        
+            # Update clusters from which points are taken
+            C = _vq.update_cluster_means(data, label, 2)[0]
+            m = np.bincount(label)
+            D = cdist(C, data, metric='sqeuclidean')
+    
+        # Compute the total sum of distances for the current configuration.
+        totsumD = np.sum(D[[label],[range(n)]])
+        # Test for a cycle: if objective is not decreased, back out
+        # the last step and move on to the single update phase
+        if prevtotsumD <= totsumD:
+            label = prevlabel
+            C = Clast
+            m = mlast
+            iter -= 1
+            break
+        if iter >= maxit:
+            break
+    
+        # Determine closest cluster for each point and reassign points to clusters
+        prevlabel = label;
+        prevtotsumD = totsumD
+        newlabel = vq(data, C)[0]
+    
+        # Determine which points moved
+        moved = newlabel != prevlabel
+        if np.any(moved):
+            # Resolve ties in favor of not moving
+            moved[np.bitwise_and(moved, D[0,:]==D[1,:])] = False
+        if not np.any(moved):
+            break
+        label = newlabel
+        # update centers
+        C = _vq.update_cluster_means(data, label, 2)[0]
+        m = np.bincount(label)
+
+
+    #------------------------------------------------------------------
+    # Begin phase two:  single reassignments
+    #------------------------------------------------------------------
+    lastmoved = -1
+    converged = False
+    while iter < maxit:
+        # Calculate distances to each cluster from each point, and the
+        # potential change in total sum of errors for adding or removing
+        # each point from each cluster.  Clusters that have not changed
+        # membership need not be updated.
+        #
+        # Singleton clusters are a special case for the sum of dists
+        # calculation. Removing their only point is never best, so the
+        # reassignment criterion had better guarantee that a singleton
+        # point will stay in its own cluster. Happily, we get
+        # Del(i,idx(i)) == 0 automatically for them.
+        Del = cdist(C, data, metric='sqeuclidean')
+        mbrs = label==0
+        sgn = 1 - 2*mbrs    # -1 for members, 1 for nonmembers
+        if m[0] == 1:
+            sgn[mbrs] = 0   # prevent divide-by-zero for singleton mbrs
+        Del[0,:] = (m[0] / (m[0] + sgn)) * Del[0,:]
+        # same for cluster 2
+        sgn = -sgn          # -1 for members, 1 for nonmembers
+        if m[1] == 1:
+            sgn[np.invert(mbrs)] = 0    # prevent divide-by-zero for singleton mbrs
+        Del[1,:] = (m[1] / (m[1] + sgn)) * Del[1,:]
+    
+        # Determine best possible move, if any, for each point.  Next we
+        # will pick one from those that actually did move.
+        prevlabel = label
+        newlabel = (Del[1,:]<Del[0,:]).astype('int')
+        moved = np.argwhere(prevlabel != newlabel)
+        if moved.size>0:
+            # Resolve ties in favor of not moving
+            moved = np.delete(moved,(Del[0,moved]==Del[1,moved]).flatten(),None)
+        if moved.size==0:
+            converged = True
+            break
+    
+        # Pick the next move in cyclic order
+        moved = (np.min((moved - lastmoved % n) + lastmoved) % n)
+    
+        # If we've gone once through all the points, that's an iteration
+        if moved <= lastmoved:
+            iter = iter + 1
+            if iter >= maxit:
+                break
+        lastmoved = moved
+    
+        olbl = label[moved]
+        nlbl = newlabel[moved]
+        totsumD = totsumD + Del[nlbl,moved] - Del[olbl,moved]
+    
+        # Update the cluster index vector, and the old and new cluster
+        # counts and centroids
+        label[moved] = nlbl
+        m[nlbl] += 1
+        m[olbl] -= 1
+        C[nlbl,:] = C[nlbl,:] + (data[moved,:] - C[nlbl,:]) / m[nlbl];
+        C[olbl,:] = C[olbl,:] - (data[moved,:] - C[olbl,:]) / m[olbl];
+    
+    #------------------------------------------------------------------
+    if not converged:
+        warnings.warn("kmeans failed to converge after {} iterations".format(maxit))
+
+    return label, C
+
 def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyOrder, windowtime, steptime, freq, maxerrors, dev=False):
     """
     Description
@@ -810,20 +978,7 @@ def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyO
         # do 2-means clustering
         try:
             for p in range(nd+1):
-                IDL_d[p] = kmeans2(ll_d[p].T,2, iter=100, minit='++', missing='raise')
-
-        except scipy.cluster.vq.ClusterError:
-            # If an empty cluster error is encountered, try again next
-            # iteration. This can occur particularly in long
-            # fixations, as the number of clusters there should be 1,
-            # but we try to fit 2 to detect a saccade (i.e. 2 fixations)
-            
-            # visual explanation of empty cluster errors:
-            # http://www.ceng.metu.edu.tr/~tcan/ceng465_s1011/Schedule/KMeansEmpty.html
-            if len(np.unique(IDL_d[p][-1])) != 2:
-                print('\t\tEmpty cluster error encountered (n={}/100). Trying again on next iteration.'.format(counterrors))
-                counterrors += 1
-                continue
+                IDL_d[p] = kmeans2(ll_d[p].T)[0]
         except Exception as e:
             print('Unknown error encountered at sample {}.\n'.format(i))
             raise e
@@ -833,7 +988,7 @@ def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyO
         switches = [[] for p in range(nd+1)]
         switchesw = [[] for p in range(nd+1)]
         for p in range(nd+1):
-            switches[p] = np.abs(np.diff(IDL_d[p][1]))
+            switches[p] = np.abs(np.diff(IDL_d[p]))
             switchesw[p]  = 1./np.sum(switches[p])
            
         # get nearest samples of switch and add weight
