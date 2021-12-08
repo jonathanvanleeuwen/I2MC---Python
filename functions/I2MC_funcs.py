@@ -1374,8 +1374,8 @@ def getFixStats(xpos, ypos, missing, pixperdeg = None, fix = {}):
             RMSxy[a] = RMSxy[a]/pixperdeg # value in degrees visual angle
         
         ### calculate BCEA (Crossland and Rubin 2002 Optometry and Vision Science)
-        stdx = np.std(xposf[np.invert(qMiss)])
-        stdy = np.std(yposf[np.invert(qMiss)])
+        stdx = np.std(xposf[np.invert(qMiss)],ddof=1)
+        stdy = np.std(yposf[np.invert(qMiss)],ddof=1)
         if pixperdeg is not None:
             # value in degrees visual angle
             stdx = stdx/pixperdeg
