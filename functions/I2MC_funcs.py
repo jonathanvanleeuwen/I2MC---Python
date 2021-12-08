@@ -840,7 +840,7 @@ def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyO
         weighted = np.hstack([switches[0]*switchesw[0],0])
         for p in range(nd):
             j = np.array((np.argwhere(switches[p+1]).flatten()+1)*downsamples[p],dtype=int)-1
-            for o in range(-1,int(downsamples[p])-1):
+            for o in range(int(downsamples[p])):
                 weighted[j+o] = weighted[j+o] + switchesw[p+1]
         
         # add to totalweights
