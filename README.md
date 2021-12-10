@@ -15,11 +15,11 @@ Most parts of the I2MC algorithm are licensed under the Creative Commons Attribu
 
 ## About this implementation
 
-This is a Python implementation of the I2MC algorithm (tested on version 3.6/3.7). For the original Matlab implementation see https://github.com/royhessels/I2MC
+This is a Python implementation of the I2MC algorithm (tested on version Python 3.8). For the original Matlab implementation see https://github.com/royhessels/I2MC
 
-Most functions were initially ported to Python by Jonathan van Leeuwen. Diederick Niehorster and Roy Hessels updated a few functions to match the MATLAB version more closely.
+Most functions were initially ported to Python by Jonathan van Leeuwen. Diederick Niehorster and Roy Hessels updated a few functions to match the MATLAB version more closely and ported what remained.
 
-Note that this Python implementation is slightly different from the MATLAB version. Among the differences is a different implementation of the 2-Means clustering (Python version uses the built-in scipy `kmeans2`).
+Note that this Python implementation may be slightly different from the MATLAB version. Among the differences is a different implementation of Chebyshev filtering (the Python version uses `scipy.signal.cheby1()`, the MATLAB version uses `cheby1` from the signal processing toolbox).
 
 The differences in output between the MATLAB and Python implementation of I2MC are visualized in Figure 1 and 2. As is visible from these Figures, slight differences in output between the MATLAB and Python implementations remain. As such, when using this Python implementation, please cite the original paper (see above) and mention that this Python implementation is used.
 
