@@ -171,9 +171,10 @@ for it in range(1,101):
 # =============================================================================
 for foldIdx, folder in enumerate(allFolders):
     # make output folder
-    outFold = folders['output']+os.sep+(folder.split(os.sep)[-1])
-    if not os.path.isdir(outFold):
-       os.mkdir(outFold)
+    if doPlotData:
+        outFold = folders['output']+os.sep+(folder.split(os.sep)[-1])
+        if not os.path.isdir(outFold):
+           os.mkdir(outFold)
 
     if nfiles[foldIdx] == 0:
         print('folder is empty, continuing to next folder')
