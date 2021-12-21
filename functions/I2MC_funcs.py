@@ -422,7 +422,7 @@ def findInterpWins(xpos, ypos, missing, windowtime, edgesamples, freq, maxdisp):
     # we don't throw out anything we can't deal with yet, we do that below.
     # this is just some preprocessing
     k=0  #was K=1 in matlab
-    while k<len(missStart):
+    while k<len(missStart)-1:
         # skip if too long
         if missEnd[k]-missStart[k]+1 > windowsamples:
             k = k+1
@@ -472,7 +472,7 @@ def findInterpWins(xpos, ypos, missing, windowtime, edgesamples, freq, maxdisp):
         # next missing too close
         if missStart[p]<edgesamples+1 or \
             (p>0 and missEnd[p-1] > missStart[p]-edgesamples-1) or \
-            missEnd[p]>len(xpos)-edgesamples or \
+            missEnd[p]>len(xpos)-1-edgesamples or \
             (p<len(missStart)-1 and missStart[p+1] < missEnd[p]+edgesamples+1):
             qRemove[p] = True
             continue
@@ -486,7 +486,7 @@ def findInterpWins(xpos, ypos, missing, windowtime, edgesamples, freq, maxdisp):
         on,off = bool2bounds(np.isnan(xpos[idx]))
         for q in range(len(on)): 
             lesamps = np.array(on[q]-np.arange(edgesamples)+missStart[p]-1, dtype=int)
-            resamps = np.array(off[q]+np.arange(edgesamples)+missStart[p]-1, dtype=int)
+            resamps = np.array(off[q]+np.arange(edgesamples)+missStart[p]+1, dtype=int)
             displacement = np.hypot(np.nanmedian(xpos[resamps])-np.nanmedian(xpos[lesamps]), np.nanmedian(ypos[resamps])-np.nanmedian(ypos[lesamps]))
             if displacement > maxdisp:
                 qRemove[p] = True
