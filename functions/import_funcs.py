@@ -9,6 +9,54 @@ Created on Thu Sep 19 10:57:23 2019
 # Import modules
 # =============================================================================
 import numpy as np
+import pandas as pd
+
+
+# =============================================================================
+# Import Titta
+# =============================================================================
+def importTitta(fname, nskip=1, res=[1920,1080], missingx=-1920, missingy=-1080):
+    '''
+    Imports data from tsv files produced by Titta. 
+    
+    
+    Parameters
+    ----------
+    fname : string
+        The file (filepath) 
+    nskip : int
+        Number of header lines
+    res : tupple
+        The (X,Y) resolution of the screen
+    missingx : ??
+        The value reflecting mising values for X coordinates in the dataset
+    missingy : ??
+        The value reflecting mising values for Y coordinates in the dataset    
+    
+    Returns
+    -------
+    t : np.array
+        The sample times from the dataset
+    L_X : np.array
+        X positions from the left eye
+    L_Y : np.array
+        Y positions from the left eye
+    R_X : np.array
+        X positions from the right eye
+    R_Y : np.array
+        Y positions from the right eye
+    '''
+
+    df = pd.read_csv(fname, sep='\t')
+
+    L_X = np.array(df['left_gaze_point_on_display_area_x']) * res[0]
+    L_Y = np.array(df['left_gaze_point_on_display_area_y']) * res[1]
+    R_X = np.array(df['right_gaze_point_on_display_area_x']) * res[0]
+    R_Y = np.array(df['right_gaze_point_on_display_area_y']) * res[1]
+    t = np.array(df['system_time_stamp'])
+    t = t - t[0]
+    t = t / 1000.0
+    return t, L_X, L_Y, R_X, R_Y
 
 
 # =============================================================================
