@@ -936,7 +936,7 @@ def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyO
             # not enough data point before first missing, so exclude them all
             on[0]=0
 
-        if off[-1]>(len(xpos)-nrsamples):
+        if off[-1]>(len(xpos)-1-nrsamples):
             # not enough data points after last missing, so exclude them all
             off[-1]=len(xpos)-1
 
@@ -950,7 +950,7 @@ def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyO
         i=0
 
     eind = i+nrsamples
-    while eind<=(len(xpos)):
+    while eind<=(len(xpos)-1):
         # check if max errors is crossed
         if counterrors > maxerrors:
             print('Too many empty clusters encountered, aborting file. \n')
@@ -1023,11 +1023,11 @@ def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyO
                 i = on[qWhichMiss][0]-nrsamples
             eind = i+nrsamples
             
-        if eind>len(xpos) and eind-stepsize<len(xpos):
+        if eind>len(xpos)-1 and eind-stepsize<len(xpos)-1:
             # we just exceeded data bound, but previous eind was before end of
             # data: we have some unprocessed samples. retreat just enough so we
             # process those end samples once
-            d = eind-len(xpos)
+            d = eind-len(xpos)+1
             eind = eind-d
             i = i-d
             
