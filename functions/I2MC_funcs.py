@@ -743,7 +743,7 @@ def kmeans2(data):
                 # In the very unusual event that the cluster had only
                 # one member, pick any other non-singleton point.
                 cFrom = np.argwhere(m>1)[0]
-                lonely = np.argwhere(mlabel==cFrom)[0]
+                lonely = np.argwhere(label==cFrom)[0]
             label[lonely] = i
         
             # Update clusters from which points are taken
