@@ -548,8 +548,8 @@ def windowedInterpolate(xpos, ypos, missing, missStart, missEnd, edgesamples, de
         validsamps  = np.concatenate((outWin[0]+np.arange(-edgesamples,0), outWin[outWinNotMissing], outWin[-1]+np.arange(1,edgesamples+1)))
         
         # get valid values: where no missing data was observed
-        validx      = xpos[validsamps];
-        validy      = ypos[validsamps];
+        validx      = xpos[validsamps]
+        validy      = ypos[validsamps]
         
         # do Steffen interpolation, update xpos, ypos
         xpos[outWin]= steffenInterp(validsamps,validx,outWin)
@@ -725,8 +725,8 @@ def kmeans2(data):
         iter += 1
         # Calculate the new cluster centroids and counts, and update the
         # distance from every point to those new cluster centroids
-        Clast = C;
-        mlast = m;
+        Clast = C
+        mlast = m
         D = cdist(C, data, metric='sqeuclidean')
 
         # Deal with clusters that have just lost all their members
@@ -744,7 +744,6 @@ def kmeans2(data):
                 # one member, pick any other non-singleton point.
                 cFrom = np.argwhere(m>1)[0]
                 lonely = np.argwhere(mlabel==cFrom)[0]
-            end
             label[lonely] = i
         
             # Update clusters from which points are taken
@@ -766,7 +765,7 @@ def kmeans2(data):
             break
     
         # Determine closest cluster for each point and reassign points to clusters
-        prevlabel = label;
+        prevlabel = label
         prevtotsumD = totsumD
         newlabel = vq(data, C)[0]
     
@@ -842,8 +841,8 @@ def kmeans2(data):
         label[moved] = nlbl
         m[nlbl] += 1
         m[olbl] -= 1
-        C[nlbl,:] = C[nlbl,:] + (data[moved,:] - C[nlbl,:]) / m[nlbl];
-        C[olbl,:] = C[olbl,:] - (data[moved,:] - C[olbl,:]) / m[olbl];
+        C[nlbl,:] = C[nlbl,:] + (data[moved,:] - C[nlbl,:]) / m[nlbl]
+        C[olbl,:] = C[olbl,:] - (data[moved,:] - C[olbl,:]) / m[olbl]
     
     #------------------------------------------------------------------
     if not converged:
@@ -1154,7 +1153,7 @@ def getFixations(finalweights, timestamp, xpos, ypos, missing, par):
         i = fixend[p]
         if i<len(xpos): # don't walk when fixation ending at end of data
             while np.hypot(xpos[i]-xmedThis,ypos[i]-ymedThis)>thresh:
-                i = i-1;
+                i = i-1
             fixend[p] = i
 
     ### get start time, end time,
@@ -1166,8 +1165,8 @@ def getFixations(finalweights, timestamp, xpos, ypos, missing, par):
         # get median coordinates of fixation
         xmedThis = np.median(xpos[fixstart[p]:fixend[p]+1])
         ymedThis = np.median(ypos[fixstart[p]:fixend[p]+1])
-        xmedPrev = np.median(xpos[fixstart[p-1]:fixend[p-1]+1]);
-        ymedPrev = np.median(ypos[fixstart[p-1]:fixend[p-1]+1]);
+        xmedPrev = np.median(xpos[fixstart[p-1]:fixend[p-1]+1])
+        ymedPrev = np.median(ypos[fixstart[p-1]:fixend[p-1]+1])
         
         # check if fixations close enough in time and space and thus qualify
         # for merging
@@ -1178,8 +1177,8 @@ def getFixations(finalweights, timestamp, xpos, ypos, missing, par):
         if starttime[p]-endtime[p-1] < maxMergeTime and \
             np.hypot(xmedThis-xmedPrev,ymedThis-ymedPrev) < maxMergeDist:
             # merge
-            fixend[p-1] = fixend[p];
-            endtime[p-1]= endtime[p];
+            fixend[p-1] = fixend[p]
+            endtime[p-1]= endtime[p]
             # delete merged fixation
             fixstart = np.delete(fixstart, p)
             fixend = np.delete(fixend, p)
@@ -1361,12 +1360,12 @@ def getFixStats(xpos, ypos, missing, pixperdeg = None, fix = {}):
         # Difference x position
         xdif = xposf.copy()
         xdif[qMiss] = np.nan
-        xdif = np.diff(xdif)**2; 
+        xdif = np.diff(xdif)**2
         xdif = xdif[np.invert(np.isnan(xdif))]
         # Difference y position
         ydif = yposf.copy()
         ydif[qMiss] = np.nan
-        ydif = np.diff(ydif)**2; 
+        ydif = np.diff(ydif)**2
         ydif = ydif[np.invert(np.isnan(ydif))]
         # Distance and RMS measure
         c = xdif + ydif # 2D sample-to-sample displacement value in pixels
@@ -1389,7 +1388,7 @@ def getFixStats(xpos, ypos, missing, pixperdeg = None, fix = {}):
             rho = xx[0,1]
             P = 0.68 # cumulative probability of area under the multivariate normal
             k = np.log(1./(1-P))
-            BCEA[a] = 2*k*np.pi*stdx*stdy*np.sqrt(1-rho**2);
+            BCEA[a] = 2*k*np.pi*stdx*stdy*np.sqrt(1-rho**2)
         
         ### calculate max-min of fixation
         if np.sum(qMiss) == len(qMiss):
@@ -1401,8 +1400,8 @@ def getFixStats(xpos, ypos, missing, pixperdeg = None, fix = {}):
 
         if pixperdeg is not None:
             # value in degrees visual angle
-            rangeX[a] = rangeX[a]/pixperdeg;
-            rangeY[a] = rangeY[a]/pixperdeg;
+            rangeX[a] = rangeX[a]/pixperdeg
+            rangeY[a] = rangeY[a]/pixperdeg
 
     # Add results to fixation dictionary
     fix['RMSxy'] = RMSxy
@@ -1585,8 +1584,8 @@ def I2MC(gazeData, options = {}):
     print('\tSearching for valid interpolation windows')
     missStart,missEnd = findInterpWins(xpos, ypos, missing, par['windowtimeInterp'], par['edgeSampInterp'], par['freq'], par['maxdisp'])
     if q2Eyes:
-        llmissStart,llmissEnd = findInterpWins(data['L_X'], data['L_Y'], llmiss, par['windowtimeInterp'], par['edgeSampInterp'], par['freq'], par['maxdisp']);
-        rrmissStart,rrmissEnd = findInterpWins(data['R_X'], data['R_Y'], rrmiss, par['windowtimeInterp'], par['edgeSampInterp'], par['freq'], par['maxdisp']);
+        llmissStart,llmissEnd = findInterpWins(data['L_X'], data['L_Y'], llmiss, par['windowtimeInterp'], par['edgeSampInterp'], par['freq'], par['maxdisp'])
+        rrmissStart,rrmissEnd = findInterpWins(data['R_X'], data['R_Y'], rrmiss, par['windowtimeInterp'], par['edgeSampInterp'], par['freq'], par['maxdisp'])
     
     # Use Steffen interpolation and replace values
     print('\tReplace interpolation windows with Steffen interpolation')
