@@ -2,7 +2,7 @@
 """
 Created on Thu Sep 19 10:54:00 2019
 
-@author: Jonathan
+@author: Jonathan van Leeuwen, Diederick Niehorster
 """
 
 # =============================================================================

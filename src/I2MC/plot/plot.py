@@ -2,7 +2,7 @@
 """
 Created on Thu Sep 19 10:57:23 2019
 
-@author: Jonathan
+@author: Jonathan van Leeuwen, Diederick Niehorster
 """
 import matplotlib
 import matplotlib.pyplot as plt

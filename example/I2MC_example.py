@@ -2,7 +2,7 @@
 """
 Created on Thu Sep 19 10:57:23 2019
 
-@author: Jonathan
+@author: Jonathan van Leeuwen, Diederick Niehorster
 """
 
 # =============================================================================
@@ -72,9 +72,9 @@ Created on Thu Sep 19 10:57:23 2019
 import os
 import sys
 import numpy as np
-import functions.import_funcs as imp
-import functions.I2MC_funcs as I2MC_funcs
-import functions.plot_funcs as plot
+import import_funcs as imp
+import I2MC
+import I2MC.plot
 import matplotlib.pyplot as plt
 import time 
 start = time.time()
@@ -103,7 +103,7 @@ opt['disttoscreen'] = 65.0 # distance to screen in cm.
 # the eye-tracking data in textfiles in each folder.
 dir_path = os.path.dirname(os.path.realpath(__file__))
 folders = {}
-folders['data'] = os.path.join(dir_path,'example data') # folder in which data is stored (each folder in folders.data is considered 1 subject)
+folders['data'] = os.path.join(dir_path,'example_data') # folder in which data is stored (each folder in folders.data is considered 1 subject)
 folders['output'] = os.path.join(dir_path,'output')     # folder for output (will use structure in folders.data for saving output)
 
 # Plot results
@@ -194,14 +194,14 @@ for foldIdx, folder in enumerate(allFolders):
             continue
         
         # RUN FIXATION DETECTION
-        fix,_,_ = I2MC_funcs.I2MC(data,opt)
+        fix,_,_ = I2MC.I2MC(data,opt)
         
         if fix != False:
             ## PLOT RESULTS
             if doPlotData:
                 # pre-allocate name for saving file
                 saveFile = outFold + os.sep+  os.path.splitext(file)[0]+'.png'
-                f = I2MC_funcs.plotResults(data,fix,[opt['xres'], opt['yres']])
+                f = I2MC.plot.plotResults(data,fix,[opt['xres'], opt['yres']])
                 # save figure and close
                 print('Saving image to: '+saveFile)
                 f.savefig(saveFile)
