@@ -103,7 +103,7 @@ folders['data']   = os.path.join(dir_path,'example_data')   # folder in which da
 folders['output'] = os.path.join(dir_path,'output')         # folder for output (will use structure in folders.data for saving output)
 
 # Options of example script
-logging      = True # provide some output on command line regarding I2MC internal progress, and this script
+log_level    = 1    # 0: no output, 1: output from this script only, 2: provide some output on command line regarding I2MC internal progress
 do_plot_data = True # if set to True, plot of fixation detection for each trial will be saved as png-file in output folder.
 # the figures works best for short trials (up to around 20 seconds)
 
@@ -158,7 +158,8 @@ for it in range(1,101):
     if os.path.isfile(fix_file) and it < 100:
         fix_file = os.path.join(folders['output'], 'allfixations_{}.txt'.format(it))
     else:
-        print('Writing fixations to: "{}"'.format(fix_file))
+        if log_level>0:
+            print('Writing fixations to: "{}"'.format(fix_file))
         with open(fix_file, 'w+') as f:
             f.write(fix_file_header)
         break
@@ -174,7 +175,7 @@ for fold_idx, folder in enumerate(all_folders):
            os.mkdir(outFold)
 
     if number_of_files[fold_idx] == 0:
-        if logging:
+        if log_level>0:
             print('folder is empty, continuing to next folder')
         continue
     
@@ -182,19 +183,21 @@ for fold_idx, folder in enumerate(all_folders):
         # Get current file name
         file_name = os.path.join(folder, file)
         ## IMPORT DATA
-        if logging:
-            print('\n\n\nImporting and processing: "{}"'.format(file_name))
+        if log_level>0:
+            if log_level>1:
+                print('\n')
+            print('\nImporting and processing: "{}"'.format(file_name))
         data = {}
         data['time'], data['L_X'], data['L_Y'], data['R_X'], data['R_Y'] = imp.import_tobii_TX300(file_name, 1, [opt['xres'], opt['yres']], opt['missingx'], opt['missingy'])
         
         # check whether we have data, if not, continue to next file
         if len(data['time']) == 0: 
-            if logging:
+            if log_level>0:
                 print('Empty file encountered, continuing to next file ')
             continue
         
         # RUN FIXATION DETECTION
-        fix,_,_ = I2MC.I2MC(data,opt)
+        fix,_,_ = I2MC.I2MC(data,opt,log_level==2,'\t')
         
         if fix != False:
             ## PLOT RESULTS
@@ -203,7 +206,7 @@ for fold_idx, folder in enumerate(all_folders):
                 save_file = os.path.join(outFold, os.path.splitext(file)[0]+'.png')
                 f = I2MC.plot.plot_data_and_fixations(data, fix, fix_as_line=True, res=[opt['xres'], opt['yres']])
                 # save figure and close
-                if logging:
+                if log_level>0:
                     print('Saving image to: '+save_file)
                 f.savefig(save_file)
                 plt.close(f)
