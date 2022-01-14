@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 
-def plotResults(data, fix, fix_as_line=True, res=None):
+def plot_data_and_fixations(data, fix, fix_as_line=True, res=None):
     """
     Plots the results of the I2MC function
     fix_as_line: if true, fixations are drawn as lines, if
