@@ -5,9 +5,6 @@ Created on Thu Sep 19 10:54:00 2019
 @author: Jonathan van Leeuwen, Diederick Niehorster
 """
 
-# =============================================================================
-# Import libraries
-# =============================================================================
 import numpy as np
 import math
 import scipy
@@ -15,38 +12,43 @@ import scipy.interpolate as interp
 import scipy.signal
 from scipy.cluster.vq import vq, _vq
 from scipy.spatial.distance import cdist
+import copy
+import warnings
 import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.patches as patches
-import copy
-import warnings
-
 
 # =============================================================================
 # Helper functions
 # =============================================================================
-def isNumber(s):
+def is_number(s):
     try:
-        np.array(s,dtype=float)
+        np.array(s, dtype=float)
         return True
     except ValueError:
         return False    
 
-def checkNumeric(k,v):
-    assert isNumber(v), 'The value of "{}" is invalid. Expected input to be one of these types:\n\ndouble, single, uint8, uint16, uint32, uint64, int8, int16, int32, int64\n\nInstead its type was {}.'.format(k, type(v))
+def check_numeric(k, v):
+    if not is_number(v):
+        raise ValueError('The value of "{}" is invalid. Expected input to be a number. Instead its type was {}.'.format(k, type(v)))
 
-def checkScalar(k,v):
-    assert np.ndim(v) == 0, 'The value of "{}" is invalid. Expected input to be a scalar.'.format(k)
+def check_scalar(k, v):
+    if not np.ndim(v) == 0:
+        raise ValueError('The value of "{}" is invalid. Expected input to be a scalar.'.format(k))
 
-def checkNumel2(k,v):
-    assert np.shape(v) == (2,), 'The value of "{}" is invalid. Expected input to be an array with number of elements equal to 2.'.format(k)
+def check_vector_2(k, v):
+    if not np.size(v) == 2:
+        raise ValueError('The value of "{}" is invalid. Expected input to be a 2-element array.'.format(k))
 
-def checkInt(k,v):
-    assert np.sum(np.array(v)%1) == 0, 'The value of "{}" is invalid. Expected input to be integer-valued.'.format(k)
+def check_int(k, v):
+    if np.sum(np.array(v) % 1) != 0:
+        raise ValueError('The value of "{}" is invalid. Expected input to be an integer or list of integers.'.format(k))
     
-def checkFun(k, d, s):
-    assert k in d.keys(), 'I2MCfunc: "{}" must be specified using the "{}" option'.format(s, k)
-    assert isNumber(d[k]), 'I2MCfunc: "{}" must be set as a number using the "{}" option'.format(s, k) 
+def check_fun(k, d, s):
+    if k not in d.keys():
+        raise ValueError('I2MCfunc: "{}" must be specified using the "{}" option key, but it cannot be found'.format(s, k))
+    if not is_number(d[k]):
+        raise ValueError('I2MCfunc: "{}" must be set as a number using the "{}" option'.format(s, k)) 
 
 def angleToPixels(angle, screenDist, screenW, screenXY):
     """
@@ -86,7 +88,7 @@ def angleToPixels(angle, screenDist, screenW, screenXY):
 
     return pix
 
-def getMissing(L_X, R_X, missingx, L_Y, R_Y, missingy):
+def getMissing(L_X, R_X, missing_x, L_Y, R_Y, missing_y):
     """
     Gets missing data and returns missing data for left, right and average
     
@@ -96,39 +98,35 @@ def getMissing(L_X, R_X, missingx, L_Y, R_Y, missingy):
         Left eye X gaze position data
     R_X : np.array
         Right eye X gaze position data
-    missingx : Not defined
-        The values reflecting mising values for X coordinates in the dataset
+    missing_x : scalar
+        The value reflecting mising values for X coordinates in the dataset
     L_Y : np.array
         Left eye Y gaze position data
     R_Y : np.array
         Right eye Y gaze position data
-    missingy : Not defined
-        The value reflectings mising values for Y coordinates in the dataset
+    missing_y : scalar
+        The value reflecting mising values for Y coordinates in the dataset
 
     Returns
     -------
     qLMiss : np.array - Boolean
-        Boolean with missing values for the left eye
+        Boolean indicating missing samples for the left eye
     qRMiss : np.array - Boolean
-        Boolean with missing values for the right eye
+        Boolean indicating missing samples for the right eye
     qBMiss : np.array - Boolean
-        Boolean with missing values for both eyes
-        
-    Examples
-    --------
-    >>>
+        Boolean indicating missing samples for both eyes
     """
 
     # Get where the missing is
     
     # Left eye
-    qLMissX = np.logical_or(L_X == missingx, np.isnan(L_X))
-    qLMissY = np.logical_or(L_Y == missingy, np.isnan(L_Y))
+    qLMissX = np.logical_or(L_X == missing_x, np.isnan(L_X))
+    qLMissY = np.logical_or(L_Y == missing_y, np.isnan(L_Y))
     qLMiss = np.logical_and(qLMissX, qLMissY)
     
     # Right
-    qRMissX = np.logical_or(R_X == missingx, np.isnan(R_X))
-    qRMissY = np.logical_or(R_Y == missingy, np.isnan(R_Y))
+    qRMissX = np.logical_or(R_X == missing_x, np.isnan(R_X))
+    qRMissY = np.logical_or(R_Y == missing_y, np.isnan(R_Y))
     qRMiss = np.logical_and(qRMissX, qRMissY)
 
     # Both eyes
@@ -137,7 +135,7 @@ def getMissing(L_X, R_X, missingx, L_Y, R_Y, missingy):
     return qLMiss, qRMiss, qBMiss
 
 
-def averageEyes(L_X, R_X, missingx, L_Y, R_Y, missingy):
+def averageEyes(L_X, R_X, missing_x, L_Y, R_Y, missing_y):
     """
     Averages data from two eyes. Take one eye if only one was found.
     
@@ -147,38 +145,34 @@ def averageEyes(L_X, R_X, missingx, L_Y, R_Y, missingy):
         Left eye X gaze position data
     R_X : np.array
         Right eye X gaze position data
-    missingx : Not defined
-        The values reflecting mising values for X coordinates in the dataset
+    missing_x : scalar
+        The value reflecting mising values for X coordinates in the dataset
     L_Y : np.array
         Left eye Y gaze position data
     R_Y : np.array
         Right eye Y gaze position data
-    missingy : Not defined
-        The values reflecting mising values for Y coordinates in the dataset
+    missing_y : scalar
+        The value reflecting mising values for Y coordinates in the dataset
 
     Returns
     -------
-    xpos : np.array
+    xpos   : np.array
         The average Y gaze position
-    ypos : np.array
+    ypos   : np.array
         The average X gaze position
     qBMiss : np.array - Boolean
-        Boolean with missing values for both eyes
+        Boolean indicating missing samples for both eyes
     qLMiss : np.array - Boolean
-        Boolean with missing values for the left eye
+        Boolean indicating missing samples for the left eye
     qRMiss : np.array - Boolean
-        Boolean with missing values for the right eye
-
-    Examples
-    --------
-    >>>
+        Boolean indicating missing samples for the right eye
     """
 
     xpos = np.zeros(len(L_X))
     ypos = np.zeros(len(L_Y))
     
     # get missing
-    qLMiss, qRMiss, qBMiss = getMissing(L_X, R_X, missingx, L_Y, R_Y, missingy)
+    qLMiss, qRMiss, qBMiss = getMissing(L_X, R_X, missing_x, L_Y, R_Y, missing_y)
 
     q = np.logical_and(np.invert(qLMiss), np.invert(qRMiss))
     xpos[q] = (L_X[q] + R_X[q]) / 2.
@@ -203,15 +197,15 @@ def bool2bounds(b):
 
     Parameters
     ----------
-    data : np.array
-        A 1d np.array containing True, False values.
+    data : np.array - Boolean (or convertible to boolean)
+        A 1D array containing stretches of True and False
     
     Returns
     -------
     on : np.array
-        The array contains the indexes of the first value = True
+        The array contains the indices where each stretch of True starts
     off : np.array
-        The array contains the indexes of the last value = True in a sequence
+        The array contains the indices where each stretch of True ends
     
     Example
     --------
@@ -230,134 +224,10 @@ def bool2bounds(b):
     off = np.array(np.where(D == -1)[0] -1, dtype=int)
     return on, off
 
-def getCluster(b):
-    '''
-    Splits a np.array with True, False values into clusters. A cluster is 
-    defined as adjacent points with the same value, e.g. True or False. 
-    The output from this function is used to determine cluster sizes when
-    running cluster statistics. 
-    
-    Parameters
-    ----------
-    b : np.array
-        A 1d np.array containing True, False values.
-    
-    Returns
-    -------
-    clusters : list of np.arrays
-        The list contains the clusters split up. Each cluster in its own
-        np.array. 
-    indx : list of np.arrays
-        The list contains the indexes for each time point in the clusters.     
-    
-    Example
-    --------
-    >>> 
-    ''' 
-    if b.dtype != 'bool':
-       b = np.array(b, dtype = np.bool)
-    clusters = np.split(b, np.where(np.diff(b) != 0)[0]+1)
-    indx = np.split(np.arange(len(b)), np.where(np.diff(b) != 0)[0]+1)
-    size = np.array([len(c) for c in indx])
-    offC = np.array([np.sum(c) > 0 for c in clusters])
-    onC = np.invert(offC)
-    offCluster = [indx[i] for i in range(len(offC)) if offC[i]]
-    onCluster = [indx[i] for i in range(len(onC)) if onC[i]]
-    
-    offSize = size[offC]
-    onSize = size[onC]
-    
-    missStart = np.array([c[0] for c in offCluster], dtype=int)
-    missEnd = np.array([c[-1] for c in offCluster], dtype=int)
-    
-    dataStart = np.array([c[0] for c in onCluster], dtype=int)
-    dataEnd = np.array([c[-1] for c in onCluster], dtype=int)
-    
-    return missStart, missEnd, dataStart, dataEnd, onSize, offSize, onCluster, offCluster
-
-def plotResults(data,fix,res=[1920,1080]):
-    '''
-    Plots the results of the I2MC function
-    '''
-    
-    time = data['time']
-    Xdat = np.array([])
-    Ydat = np.array([])
-    klr  = []
-    if 'L_X' in data.keys():
-        Xdat = data['L_X']
-        Ydat = data['L_Y']
-        klr.append('g')
-    if 'R_X' in data.keys():
-        if len(Xdat) == 0:
-            Xdat = data['R_X']
-            Ydat = data['R_Y']
-        else:
-            Xdat = np.vstack([Xdat, data['R_X']])
-            Ydat = np.vstack([Ydat, data['R_Y']])
-        klr.append('r')
-    if 'average_X' in data.keys() and not 'L_X' in data.keys() and not 'R_X' in data.keys():
-        if len(Xdat) == 0:
-            Xdat = data['average_X']
-            Ydat = data['average_Y']
-        else:
-            Xdat = np.vstack([Xdat, data['average_X']])
-            Ydat = np.vstack([Ydat, data['average_Y']])
-        klr.append('b')   
-    
-    # Plot settings
-    myfontsize = 10
-    myLabelSize = 12
-    traceLW = 0.5
-    fixLWax1 = res[0]/100
-    fixLWax2 = res[1]/100
-    
-    font = {'size': myfontsize}
-    matplotlib.rc('font', **font)
-    
-    ## plot layout
-    f = plt.figure(figsize=(10, 6), dpi=300)
-    ax1 = plt.subplot(2,1,1)
-    ax1.set_ylabel('Horizontal position (pixels)', size = myLabelSize)
-    ax1.set_xlim([0, time[-1]])
-    ax1.set_ylim([0, res[0]])
-
-    ### Plot x position
-    if len(Xdat.shape) > 1:
-        for p in range(Xdat.shape[0]):
-            ax1.plot(time,Xdat[p,:],klr[p]+'-', linewidth = traceLW)
-    else:
-        ax1.plot(time,Xdat,klr[0]+'-', linewidth = traceLW)
-    
-    ### Plot Y posiiton
-    ax2 = plt.subplot(2,1,2,sharex=ax1)
-    ax2.set_xlabel('Time (ms)')
-    ax2.set_ylabel('Vertical position (pixels)', size = myLabelSize)
-    ax2.set_ylim([0, res[1]])
-    ax2.invert_yaxis()
-    if len(Xdat.shape)  > 1:
-        for p in range(Ydat.shape[0]):
-            ax2.plot(time,Ydat[p,:],klr[p]+'-', linewidth = traceLW)
-    else:
-        ax2.plot(time,Ydat,klr[0]+'-', linewidth = traceLW)
-        
-    # add fixations, but adds a shaded area instead of line
-    for b in range(len(fix['startT'])):
-        ax1.add_patch(patches.Rectangle((fix['startT'][b], fix['xpos'][b] - (fixLWax1/2)),
-                                       fix['endT'][b] - fix['startT'][b],
-                                       abs(fixLWax1), fill=True, alpha = 0.8, color = 'k',
-                                       linewidth = 0, zorder=3))
-        ax2.add_patch(patches.Rectangle((fix['startT'][b], fix['ypos'][b] - (fixLWax2/2)),
-                                       fix['endT'][b] - fix['startT'][b],
-                                       abs(fixLWax2), fill=True, alpha = 0.8, color = 'k',
-                                       linewidth = 0, zorder=3))
-
-    return f
-
 # =============================================================================
 # Interpolation functions 
 # =============================================================================
-def findInterpWins(xpos, ypos, missing, windowtime, edgesamples, freq, maxdisp):
+def find_interp_wins(xpos, ypos, missing, window_time, edge_samples, freq, max_disp):
     """
     Description
     
@@ -369,48 +239,45 @@ def findInterpWins(xpos, ypos, missing, windowtime, edgesamples, freq, maxdisp):
         Y gaze position
     missing : type
         Description
-    windowtime : float
-        Time of window to interpolate over in ms
-    edgesamples : int
-        Number of samples at window edge used for interpolating in ms
+    window_time : float
+        Duration of window to interpolate over (ms)
+    edge_samples : int
+        Number of samples at window edge used for interpolating
     freq : float
-        Frequency of measurement
-    maxdisp : float
-        maximum dispersion in position signal (i.e. if signal is in pixels, provide maxdisp in n pixels)
-
+        Measurement frequency
+    max_disp : float
+        maximum dispersion in position signal (i.e. if signal is in pixels, provide maxdisp in pixels)
 
     Returns
     -------
-    notAllowed : np.array
-        Boolean with True where interpolation is not valid           
-        
-    Examples
-    --------
-    >>>
-    """          
+    miss_start : np.array
+        Array containing indices where each interval to be interpolated starts
+    miss_end : np.array
+        Array containing indices where each interval to be interpolated ends
+    """
+
     # get indices of where missing intervals start and end
-    missStart, missEnd = bool2bounds(missing)
-    dataStart, dataEnd = bool2bounds(np.invert(missing))
-    #missStart, missEnd, dataStart, dataEnd, onSize, offSize, onCluster, offCluster = getCluster(missing)
+    miss_start, miss_end = bool2bounds(missing)
+    data_start, data_end = bool2bounds(np.invert(missing))
     
     # Determine windowsamples
-    windowsamples = round(windowtime/(1./freq))
+    window_samples = round(window_time/(1./freq))
     
     # for each candidate, check if have enough valid data at edges to execute
     # interpolation. If not, see if merging with adjacent missing is possible
     # we don't throw out anything we can't deal with yet, we do that below.
     # this is just some preprocessing
     k=0  #was K=1 in matlab
-    while k<len(missStart)-1:
+    while k<len(miss_start)-1:
         # skip if too long
-        if missEnd[k]-missStart[k]+1 > windowsamples:
+        if miss_end[k]-miss_start[k]+1 > window_samples:
             k = k+1
             continue
 
         # skip if not enough data at left edge
-        if np.sum(dataEnd == missStart[k]-1) > 0:
-            datk = int(np.argwhere(dataEnd==missStart[k]-1))
-            if dataEnd[datk]-dataStart[datk]+1 < edgesamples:
+        if np.sum(data_end == miss_start[k]-1) > 0:
+            datk = int(np.argwhere(data_end==miss_start[k]-1))
+            if data_end[datk]-data_start[datk]+1 < edge_samples:
                 k = k+1
                 continue
         
@@ -420,12 +287,12 @@ def findInterpWins(xpos, ypos, missing, windowtime, edgesamples, freq, maxdisp):
         # can just merge without further checks. Its ok if it then grows too
         # long, as we'll just end up excluding that too below, which is what
         # would have happened if we didn't do anything here
-        datk = np.argwhere(dataStart==missEnd[k]+1)
+        datk = np.argwhere(data_start==miss_end[k]+1)
         if len(datk) > 0:
             datk = int(datk)
-            if dataEnd[datk]-dataStart[datk]+1 < edgesamples:
-                missEnd = np.delete(missEnd, k)
-                missStart = np.delete(missStart, k+1)
+            if data_end[datk]-data_start[datk]+1 < edge_samples:
+                miss_end   = np.delete(miss_end  , k)
+                miss_start = np.delete(miss_start, k+1)
                 
                 # don't advance k so we check this one again and grow it further if
                 # needed
@@ -436,23 +303,23 @@ def findInterpWins(xpos, ypos, missing, windowtime, edgesamples, freq, maxdisp):
     
     # mark intervals that are too long to be deleted (only delete later so that
     # below checks can use all missing on and offsets)
-    missDur = missEnd-missStart+1
-    qRemove = missDur>windowsamples
+    miss_dur = miss_end - miss_start + 1
+    qRemove = miss_dur>window_samples
     
     # for each candidate, check if have enough valid data at edges to execute
     # interpolation and check displacement during missing wasn't too large.
     # Mark for later removal as multiple missing close together may otherwise
     # be wrongly allowed
-    for p in range(len(missStart)):
+    for p in range(len(miss_start)):
         # check enough valid data at edges
         # missing too close to beginning of data
         # previous missing too close
         # missing too close to end of data
         # next missing too close
-        if missStart[p]<edgesamples+1 or \
-            (p>0 and missEnd[p-1] > missStart[p]-edgesamples-1) or \
-            missEnd[p]>len(xpos)-1-edgesamples or \
-            (p<len(missStart)-1 and missStart[p+1] < missEnd[p]+edgesamples+1):
+        if miss_start[p]<edge_samples+1 or \
+            (p>0 and miss_end[p-1] > miss_start[p]-edge_samples-1) or \
+            miss_end[p]>len(xpos)-1-edge_samples or \
+            (p<len(miss_start)-1 and miss_start[p+1] < miss_end[p]+edge_samples+1):
             qRemove[p] = True
             continue
         
@@ -461,13 +328,14 @@ def findInterpWins(xpos, ypos, missing, windowtime, edgesamples, freq, maxdisp):
         # this as single data points can still anchor where the interpolation
         # goes and we thus need to check distance per bit, not over the whole
         # merged bit
-        idx = np.arange(missStart[p],missEnd[p]+1, dtype = int)
+        idx = np.arange(miss_start[p],miss_end[p]+1, dtype = int)
         on,off = bool2bounds(np.isnan(xpos[idx]))
         for q in range(len(on)): 
-            lesamps = np.array(on[q]-np.arange(edgesamples)+missStart[p]-1, dtype=int)
-            resamps = np.array(off[q]+np.arange(edgesamples)+missStart[p]+1, dtype=int)
-            displacement = np.hypot(np.nanmedian(xpos[resamps])-np.nanmedian(xpos[lesamps]), np.nanmedian(ypos[resamps])-np.nanmedian(ypos[lesamps]))
-            if displacement > maxdisp:
+            lesamps = np.array(on[q] -np.arange(edge_samples)+miss_start[p]-1, dtype=int)
+            resamps = np.array(off[q]+np.arange(edge_samples)+miss_start[p]+1, dtype=int)
+            displacement = np.hypot(np.nanmedian(xpos[resamps])-np.nanmedian(xpos[lesamps]),
+                                    np.nanmedian(ypos[resamps])-np.nanmedian(ypos[lesamps]))
+            if displacement > max_disp:
                 qRemove[p] = True
                 break
 
@@ -475,18 +343,13 @@ def findInterpWins(xpos, ypos, missing, windowtime, edgesamples, freq, maxdisp):
             continue
     
     # Remove the missing clusters which cannot be interpolated
-    qRemove = np.where(qRemove)[0]
-    missStart = np.delete(missStart, qRemove)
-    missEnd = np.delete(missEnd, qRemove)
-
-    # update missing vector
-    notAllowed = missing.copy()
-    for s, e in zip(missStart, missEnd):
-        notAllowed[range(s,e+1)] = False
+    qRemove    = np.where(qRemove)[0]
+    miss_start = np.delete(miss_start, qRemove)
+    miss_end   = np.delete(miss_end  , qRemove)
     
-    return missStart,missEnd
+    return miss_start, miss_end
 
-def windowedInterpolate(xpos, ypos, missing, missStart, missEnd, edgesamples, dev=False):
+def windowed_interpolate(xpos, ypos, missing, miss_start, miss_end, edge_samples):
     """
     Interpolates the missing data, and removes areas which are not allowed 
     to be interpolated
@@ -498,9 +361,13 @@ def windowedInterpolate(xpos, ypos, missing, missStart, missEnd, edgesamples, de
     ypos : type
         Y gaze positions
     missing : np.array
-        Boolean vector containing indicating missing values
-    notAllowed : np.array
-        Boolean vector containing samples to be excluded after interpolation
+        Boolean vector indicating missing samples
+    miss_start : np.array
+        Array containing indices where each interval to be interpolated starts
+    miss_end : np.array
+        Array containing indices where each interval to be interpolated ends
+    edge_samples : int
+        Number of samples at window edge used for interpolating
 
     Returns
     -------
@@ -508,50 +375,40 @@ def windowedInterpolate(xpos, ypos, missing, missStart, missEnd, edgesamples, de
         Interpolated X gaze position
     yi : np.array
         Interpolated Y gaze position
-        
-    Examples
-    --------
-    >>>
+    new_missing : np.array
+        Updated boolean vector indicating missing samples after interpolation
     """
-    missingn = copy.deepcopy(missing)
+    new_missing = copy.deepcopy(missing)
     
     # Do the interpolating
-    for p in range(len(missStart)):
+    for p in range(len(miss_start)):
         # make vector of all samples in this window
-        outWin = np.arange(missStart[p],missEnd[p]+1)
+        out_win = np.arange(miss_start[p],miss_end[p]+1)
     
         # get edge samples: where no missing data was observed
         # also get samples in window where data was observed
-        outWinNotMissing = np.invert(missingn[outWin])
-        validsamps  = np.concatenate((outWin[0]+np.arange(-edgesamples,0), outWin[outWinNotMissing], outWin[-1]+np.arange(1,edgesamples+1)))
+        out_win_not_missing = np.invert(new_missing[out_win])
+        valid_samps = np.concatenate((out_win[0]+np.arange(-edge_samples,0),
+                                      out_win[out_win_not_missing],
+                                      out_win[-1]+np.arange(1,edge_samples+1)))
         
         # get valid values: where no missing data was observed
-        validx      = xpos[validsamps]
-        validy      = ypos[validsamps]
+        valid_x     = xpos[valid_samps]
+        valid_y     = ypos[valid_samps]
         
         # do Steffen interpolation, update xpos, ypos
-        xpos[outWin]= steffenInterp(validsamps,validx,outWin)
-        ypos[outWin]= steffenInterp(validsamps,validy,outWin)
+        xpos[out_win]= steffen_interp(valid_samps,valid_x,out_win)
+        ypos[out_win]= steffen_interp(valid_samps,valid_y,out_win)
         
         # update missing: hole is now plugged
-        missingn[outWin] = False
-    
-    # plot interpolated data before (TODO, we didn't update this...)
-    if dev:
-        f, [ax1, ax2] = plt.subplots(2,1)
-        ax1.plot(newX,xi, 'k-')
-        ax1.scatter(newX[notMissing], xpos[notMissing], s = 2, color = 'r')
-        ax1.scatter(newX[missing], xi[missing], s = 25, color = 'b')
-        ax2.plot(newX,yi, 'k-')
-        ax2.scatter(newX[notMissing], ypos[notMissing], s = 2, color = 'r')
-        ax2.scatter(newX[missing], yi[missing], s = 25, color = 'b')
+        new_missing[out_win] = False
 
-    return xpos, ypos, missingn
+    return xpos, ypos, new_missing
 
 # =============================================================================
 # interpolator
 # =============================================================================
-def steffenInterp(x, y, xi):
+def steffen_interp(x, y, xi):
     # STEFFEN 1-D Steffen interpolation
     #    steffenInterp[X,Y,XI] interpolates to find YI, the values of the
     #    underlying function Y at the points in the array XI, using
@@ -586,7 +443,6 @@ def steffenInterp(x, y, xi):
     else:
         yp[0] = p1
 
-
     # inner points
     for i in range(1,n-1):
         hi = x[i+1] - x[i]
@@ -602,8 +458,6 @@ def steffenInterp(x, y, xi):
             yp[i] = 2*a*np.min([np.abs(sim1),np.abs(si)])
         else:
             yp[i] = pi
-        
-
 
     # last point
     hnm1 = x[n-1] - x[n-2]
@@ -618,7 +472,6 @@ def steffenInterp(x, y, xi):
     else:
          yp[n-1] = pn
 
-
     yi = np.zeros(xi.size)
     for i in range(len(xi)):
         # Find the right place in the table by means of a bisection.
@@ -632,8 +485,6 @@ def steffenInterp(x, y, xi):
                 khi = k
             else:
                 klo = k
-            
-        
         
         # check if requested output is in input, so we can just copy
         if xi[i]==x[klo]:
@@ -642,7 +493,6 @@ def steffenInterp(x, y, xi):
         elif xi[i]==x[khi]:
              yi[i] = y[khi]
              continue
-        
         
         h = x[khi] - x[klo]
         s = (y[khi] - y[klo])/h
@@ -659,16 +509,17 @@ def steffenInterp(x, y, xi):
 
     return yi
 
-
-
 # =============================================================================
 # Clustering functions
 # =============================================================================
+class NotConvergedError(Exception):
+    pass
+
 def kmeans2(data):
     # n points in p dimensional space
     n = data.shape[0]
 
-    maxit = 100
+    max_iterations = 100
 
     ## initialize using kmeans++ method.
     # code taken and slightly edited from scipy.cluster.vq
@@ -699,6 +550,7 @@ def kmeans2(data):
     # Every point moved, every cluster will need an update
     prevtotsumD = math.inf
     iter = 0
+    prev_label = None
     while True:
         iter += 1
         # Calculate the new cluster centroids and counts, and update the
@@ -734,27 +586,27 @@ def kmeans2(data):
         # Test for a cycle: if objective is not decreased, back out
         # the last step and move on to the single update phase
         if prevtotsumD <= totsumD:
-            label = prevlabel
+            label = prev_label
             C = Clast
             m = mlast
             iter -= 1
             break
-        if iter >= maxit:
+        if iter >= max_iterations:
             break
     
         # Determine closest cluster for each point and reassign points to clusters
-        prevlabel = label
+        prev_label = label
         prevtotsumD = totsumD
-        newlabel = vq(data, C)[0]
+        new_label = vq(data, C)[0]
     
         # Determine which points moved
-        moved = newlabel != prevlabel
+        moved = new_label != prev_label
         if np.any(moved):
             # Resolve ties in favor of not moving
             moved[np.bitwise_and(moved, D[0,:]==D[1,:])] = False
         if not np.any(moved):
             break
-        label = newlabel
+        label = new_label
         # update centers
         C = _vq.update_cluster_means(data, label, 2)[0]
         m = np.bincount(label)
@@ -763,9 +615,9 @@ def kmeans2(data):
     #------------------------------------------------------------------
     # Begin phase two:  single reassignments
     #------------------------------------------------------------------
-    lastmoved = -1
+    last_moved = -1
     converged = False
-    while iter < maxit:
+    while iter < max_iterations:
         # Calculate distances to each cluster from each point, and the
         # potential change in total sum of errors for adding or removing
         # each point from each cluster.  Clusters that have not changed
@@ -790,9 +642,9 @@ def kmeans2(data):
     
         # Determine best possible move, if any, for each point.  Next we
         # will pick one from those that actually did move.
-        prevlabel = label
-        newlabel = (Del[1,:]<Del[0,:]).astype('int')
-        moved = np.argwhere(prevlabel != newlabel)
+        prev_label = label
+        new_label = (Del[1,:]<Del[0,:]).astype('int')
+        moved = np.argwhere(prev_label != new_label)
         if moved.size>0:
             # Resolve ties in favor of not moving
             moved = np.delete(moved,(Del[0,moved]==Del[1,moved]).flatten(),None)
@@ -801,17 +653,17 @@ def kmeans2(data):
             break
     
         # Pick the next move in cyclic order
-        moved = (np.min((moved - lastmoved % n) + lastmoved) % n)
+        moved = (np.min((moved - last_moved % n) + last_moved) % n)
     
         # If we've gone once through all the points, that's an iteration
-        if moved <= lastmoved:
+        if moved <= last_moved:
             iter = iter + 1
-            if iter >= maxit:
+            if iter >= max_iterations:
                 break
-        lastmoved = moved
+        last_moved = moved
     
         olbl = label[moved]
-        nlbl = newlabel[moved]
+        nlbl = new_label[moved]
         totsumD = totsumD + Del[nlbl,moved] - Del[olbl,moved]
     
         # Update the cluster index vector, and the old and new cluster
@@ -823,12 +675,12 @@ def kmeans2(data):
         C[olbl,:] = C[olbl,:] - (data[moved,:] - C[olbl,:]) / m[olbl]
     
     #------------------------------------------------------------------
-    if not converged:
-        warnings.warn("kmeans failed to converge after {} iterations".format(maxit))
+    if not converged or True:
+        raise NotConvergedError('Failed to converge after %d iterations.' % iter)
 
     return label, C
 
-def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyOrder, windowtime, steptime, freq, maxerrors, dev=False):
+def twoClusterWeighting(xpos, ypos, missing, downsamples, downsamp_filter, cheby_order, window_time, step_time, freq, max_errors, logging, logging_offset):
     """
     Description
     
@@ -842,32 +694,29 @@ def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyO
         Description
     downsamples : type
         Description
-    downsampFilter : type
+    downsamp_filter : type
         Description
-    chebyOrder : type
+    cheby_order : type
         Description
-    windowtime : type
+    window_time : type
         Description
-    steptime : type
+    step_time : type
         Description
     freq : type
         Description
-    maxerrors : type
+    max_errors : type
         Description
-
 
     Returns
     -------
     finalweights : np.array
         Vector of 2-means clustering weights (one weight for each sample), the higher, the more likely a saccade happened        
-        
-    Examples
-    --------
-    >>> 
+    stopped : Boolean
+        Indicates if stopped because of too many errors encountered (True), or completed successfully (False)
     """   
     # calculate number of samples of the moving window
-    nrsamples = int(windowtime/(1./freq))
-    stepsize  = np.max([1,int(steptime/(1./freq))])
+    nrsamples = int(window_time/(1./freq))
+    stepsize  = np.max([1,int(step_time/(1./freq))])
     
     # create empty weights vector
     totalweights = np.zeros(len(xpos))
@@ -877,20 +726,20 @@ def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyO
     # stopped is always zero, unless maxiterations is exceeded. this
     # indicates that file could not be analysed after trying for x iterations
     stopped = False
-    counterrors = 0
+    num_errors = 0
     
     # Number of downsamples
     nd = len(downsamples)
     
     # Downsample 
-    if downsampFilter:
+    if downsamp_filter:
         # filter signal. Follow the lead of decimate(), which first runs a
         # Chebychev filter as specified below
         rp = .05 # passband ripple in dB
         b = [[] for i in range(nd)]
         a = [[] for i in range(nd)]
         for p in range(nd):
-            b[p],a[p] = scipy.signal.cheby1(chebyOrder, rp, .8/downsamples[p]) 
+            b[p],a[p] = scipy.signal.cheby1(cheby_order, rp, .8/downsamples[p]) 
     
     
     # idx for downsamples
@@ -930,8 +779,9 @@ def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyO
     eind = i+nrsamples
     while eind<=(len(xpos)-1):
         # check if max errors is crossed
-        if counterrors > maxerrors:
-            print('Too many empty clusters encountered, aborting file. \n')
+        if num_errors > max_errors:
+            if logging:
+                print(logging_offset + 'Too many empty clusters encountered, aborting file. \n')
             stopped = True
             finalweights = np.nan
             return finalweights, stopped
@@ -947,7 +797,7 @@ def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyO
         # number of samples is reduced. select samples such that they are till
         # end of window
         for p in range(nd):
-            if downsampFilter:
+            if downsamp_filter:
                 ll_d[p+1] = scipy.signal.filtfilt(b[p],a[p],ll_d[0])
                 ll_d[p+1] = ll_d[p+1][:,idxs[p]]
             else:
@@ -957,8 +807,13 @@ def twoClusterWeighting(xpos, ypos, missing, downsamples, downsampFilter, chebyO
         try:
             for p in range(nd+1):
                 IDL_d[p] = kmeans2(ll_d[p].T)[0]
+        except NotConvergedError as e:
+            if logging:
+                print(logging_offset + str(e))
+            num_errors += 1
         except Exception as e:
-            print('Unknown error encountered at sample {}.\n'.format(i))
+            if logging:
+                print(logging_offset + 'Unknown error encountered at sample {}.\n'.format(i))
             raise e
         
         # detect switches and weight of switch (= 1/number of switches in
@@ -1394,72 +1249,81 @@ def getFixStats(xpos, ypos, missing, pixperdeg = None, fix = {}):
 # # The actual I2MC pipeline function
 # =============================================================================
 # =============================================================================
-def I2MC(gazeData, options = {}):
-    '''
-    RUNS I2MC 
-    
-    
+def I2MC(gazeData, options = None, logging=True, logging_offset=""):
+    """
     Parameters
     ----------
-    data : dict
-        Dictionary containing all the data
-    opt : dict
-        Dictionary containing all the options 
-    
+    @param gazeData: a dataframe containing the gaze data
+        the dataframe should contain the following columns (either L, R or both or average):
+            L_X         - left eye x position
+            L_Y         - left eye y position
+            R_X         - right eye x position
+            R_Y         - right eye y position
+            average_X   - average x position
+            average_Y   - average y position
+            time        - time of the gaze sample
+    @param options: a dictionary containing the options for the I2MC analysis
+        the dictionary should contain the following keys:
+            x_res        - x resolution of the screen in pixels
+            y_res        - y resolution of the screen in pixels
+            freq         - frequency of the Eyetracker in Hz
+            missing_x    - value indicating data loss
+            missing_y    - value indicating data loss
+    @param logging: boolean indicating whether to log the results
+    @param logging_offset: offset before every logging message
     Returns
     -------
-    fix : dict
-        Dictionary containing all the fixation information
-    
-    Example
-    --------
-    >>> 
-    '''
+    @return: false if the analysis was not successful, otherwise a dictionary
+        containing the results of the analysis
+    """
+
     # set defaults
+    if options is None:
+        options = {}
     data = copy.deepcopy(gazeData)
-    opt = options.copy()
-    par = {}
+    opt  = options.copy()
+    par  = {}
     
     # Check required parameters 
-    checkFun('xres', opt, 'horizontal screen resolution')
-    checkFun('yres', opt, 'vertical screen resolution')
-    checkFun('freq', opt, 'tracker sampling rate')
-    checkFun('missingx', opt, 'value indicating data loss for horizontal position')
-    checkFun('missingy', opt, 'value indicating data loss for vertical position')
+    check_fun('xres',     opt, 'horizontal screen resolution')
+    check_fun('yres',     opt, 'vertical screen resolution')
+    check_fun('freq',     opt, 'tracker sampling rate')
+    check_fun('missingx', opt, 'value indicating data loss for horizontal position')
+    check_fun('missingy', opt, 'value indicating data loss for vertical position')
     
     # required parameters:
-    par['xres'] = opt.pop('xres')
-    par['yres'] = opt.pop('yres')
-    par['freq'] = opt.pop('freq')
-    par['missingx'] = opt.pop('missingx')
-    par['missingy'] = opt.pop('missingy')
-    par['scrSz'] = opt.pop('scrSz', None ) # screen size (e.g. in cm). Optional, specify if want fixation statistics in deg
-    par['disttoscreen'] = opt.pop('disttoscreen', None) # screen distance (in same unit as size). Optional, specify if want fixation statistics in deg
+    par['xres']             = opt.pop('xres')
+    par['yres']             = opt.pop('yres')
+    par['freq']             = opt.pop('freq')
+    par['missingx']         = opt.pop('missingx')
+    par['missingy']         = opt.pop('missingy')
+    par['scrSz']            = opt.pop('scrSz', None )           # screen size (e.g. in cm). Optional, specify if want fixation statistics in deg
+    par['disttoscreen']     = opt.pop('disttoscreen', None)     # screen distance (in same unit as size). Optional, specify if want fixation statistics in deg
     
     #parameters with defaults:
     # CUBIC SPLINE INTERPOLATION
-    par['windowtimeInterp'] = opt.pop('windowtimeInterp', .1) # max duration (s) of missing values for interpolation to occur
-    par['edgeSampInterp'] = opt.pop('edgeSampInterp', 2) # amount of data (number of samples) at edges needed for interpolation
-    par['maxdisp'] = opt.pop('maxdisp', None) # maximum displacement during missing for interpolation to be possible. Default set below if needed
+    par['windowtimeInterp'] = opt.pop('windowtimeInterp', .1)   # max duration (s) of missing values for interpolation to occur
+    par['edgeSampInterp']   = opt.pop('edgeSampInterp', 2)      # amount of data (number of samples) at edges needed for interpolation
+    par['maxdisp']          = opt.pop('maxdisp', None)          # maximum displacement during missing for interpolation to be possible. Default set below if needed
     
     # K-MEANS CLUSTERING
-    par['windowtime'] = opt.pop('windowtime', .2) # time window (s) over which to calculate 2-means clustering (choose value so that max. 1 saccade can occur)
-    par['steptime'] = opt.pop('steptime', .02) # time window shift (s) for each iteration. Use zero for sample by sample processing
-    par['downsamples'] = opt.pop('downsamples', [2, 5, 10]) # downsample levels (can be empty)
-    par['downsampFilter'] = opt.pop('downsampFilter', True) # use chebychev filter when downsampling? True: yes, False: no. requires signal processing toolbox. is what matlab's downsampling functions do, but could cause trouble (ringing) with the hard edges in eye-movement data
-    par['chebyOrder'] = opt.pop('chebyOrder', 8.) # order of cheby1 Chebyshev downsampling filter, default is normally ok, as long as there are 25 or more samples in the window (you may have less if your data is of low sampling rate or your window is small
-    par['maxerrors'] = opt.pop('maxerrors', 100.) # maximum number of errors allowed in k-means clustering procedure before proceeding to next file
+    par['windowtime']       = opt.pop('windowtime', .2)         # time window (s) over which to calculate 2-means clustering (choose value so that max. 1 saccade can occur)
+    par['steptime']         = opt.pop('steptime', .02)          # time window shift (s) for each iteration. Use zero for sample by sample processing
+    par['downsamples']      = opt.pop('downsamples', [2, 5, 10]) # downsample levels (can be empty)
+    par['downsampFilter']   = opt.pop('downsampFilter', True)   # use chebychev filter when downsampling? True: yes, False: no. requires signal processing toolbox. is what matlab's downsampling functions do, but could cause trouble (ringing) with the hard edges in eye-movement data
+    par['chebyOrder']       = opt.pop('chebyOrder', 8.)         # order of cheby1 Chebyshev downsampling filter, default is normally ok, as long as there are 25 or more samples in the window (you may have less if your data is of low sampling rate or your window is small
+    par['maxerrors']        = opt.pop('maxerrors', 100.)        # maximum number of errors allowed in k-means clustering procedure before proceeding to next file
     # FIXATION DETERMINATION
-    par['cutoffstd'] = opt.pop('cutoffstd', 2.) # number of standard deviations above mean k-means weights will be used as fixation cutoff
-    par['onoffsetThresh']  = opt.pop('onoffsetThresh', 3.) # number of MAD away from median fixation duration. Will be used to walk forward at fixation starts and backward at fixation ends to refine their placement and stop algorithm from eating into saccades
-    par['maxMergeDist'] = opt.pop('maxMergeDist', 30.) # maximum Euclidean distance in pixels between fixations for merging
-    par['maxMergeTime'] = opt.pop('maxMergeTime', 30.) # maximum time in ms between fixations for merging
-    par['minFixDur'] = opt.pop('minFixDur', 40.) # minimum fixation duration (ms) after merging, fixations with shorter duration are removed from output
+    par['cutoffstd']        = opt.pop('cutoffstd', 2.)          # number of standard deviations above mean k-means weights will be used as fixation cutoff
+    par['onoffsetThresh']   = opt.pop('onoffsetThresh', 3.)     # number of MAD away from median fixation duration. Will be used to walk forward at fixation starts and backward at fixation ends to refine their placement and stop algorithm from eating into saccades
+    par['maxMergeDist']     = opt.pop('maxMergeDist', 30.)      # maximum Euclidean distance in pixels between fixations for merging
+    par['maxMergeTime']     = opt.pop('maxMergeTime', 30.)      # maximum time in ms between fixations for merging
+    par['minFixDur']        = opt.pop('minFixDur', 40.)         # minimum fixation duration (ms) after merging, fixations with shorter duration are removed from output
       
     # Development parameters (plotting intermediate steps), Change these to False when not developing
-    par['dev_interpolation'] = opt.pop('dev_interpolation', False)
-    par['dev_cluster'] = opt.pop('dev_cluster', False)
-    par['skip_inputhandeling'] = opt.pop('skip_inputhandeling', False)
+    par['dev_interpolation']    = opt.pop('dev_interpolation', False)
+    par['dev_cluster']          = opt.pop('dev_cluster', False)
+    par['skip_inputhandeling']  = opt.pop('skip_inputhandeling', False)
 
     for key in opt:
         assert False, 'Key "{}" not recognized'.format(key)
@@ -1471,21 +1335,21 @@ def I2MC(gazeData, options = {}):
     if not par['skip_inputhandeling']:
         for key, value in par.items():
             if key in ['xres','yres','freq','missingx','missingy','windowtimeInterp','maxdisp','windowtime','steptime','cutoffstd','onoffsetThresh','maxMergeDist','maxMergeTime','minFixDur']:
-                checkNumeric(key,value)
-                checkScalar(key,value)
+                check_numeric(key,value)
+                check_scalar(key,value)
             elif key == 'disttoscreen':
                 if value is not None:   # may be none (its an optional parameter)
-                    checkNumeric(key,value)
-                    checkScalar(key,value)
+                    check_numeric(key,value)
+                    check_scalar(key,value)
             elif key in ['downsampFilter','chebyOrder','maxerrors','edgeSampInterp']:
-                checkInt(key,value)
-                checkScalar(key,value)
+                check_int(key,value)
+                check_scalar(key,value)
             elif key == 'scrSz':
                 if value is not None:   # may be none (its an optional parameter)
-                    checkNumeric(key,value)
-                    checkNumel2(key,value)
+                    check_numeric(key,value)
+                    check_vector_2(key,value)
             elif key == 'downsamples':
-                checkInt(key,value)
+                check_int(key,value)
             else:
                 if type(key) != str:
                     assert False, 'Key "{}" not recognized'.format(key)
@@ -1560,17 +1424,17 @@ def I2MC(gazeData, options = {}):
     # =============================================================================
     # get interpolation windows for average and individual eye signals
     print('\tSearching for valid interpolation windows')
-    missStart,missEnd = findInterpWins(xpos, ypos, missing, par['windowtimeInterp'], par['edgeSampInterp'], par['freq'], par['maxdisp'])
+    missStart,missEnd = find_interp_wins(xpos, ypos, missing, par['windowtimeInterp'], par['edgeSampInterp'], par['freq'], par['maxdisp'])
     if q2Eyes:
-        llmissStart,llmissEnd = findInterpWins(data['L_X'], data['L_Y'], llmiss, par['windowtimeInterp'], par['edgeSampInterp'], par['freq'], par['maxdisp'])
-        rrmissStart,rrmissEnd = findInterpWins(data['R_X'], data['R_Y'], rrmiss, par['windowtimeInterp'], par['edgeSampInterp'], par['freq'], par['maxdisp'])
+        llmissStart,llmissEnd = find_interp_wins(data['L_X'], data['L_Y'], llmiss, par['windowtimeInterp'], par['edgeSampInterp'], par['freq'], par['maxdisp'])
+        rrmissStart,rrmissEnd = find_interp_wins(data['R_X'], data['R_Y'], rrmiss, par['windowtimeInterp'], par['edgeSampInterp'], par['freq'], par['maxdisp'])
     
     # Use Steffen interpolation and replace values
     print('\tReplace interpolation windows with Steffen interpolation')
-    xpos, ypos, missingn = windowedInterpolate(xpos, ypos, missing, missStart, missEnd, par['edgeSampInterp'], par['dev_interpolation'])
+    xpos, ypos, missingn = windowed_interpolate(xpos, ypos, missing, missStart, missEnd, par['edgeSampInterp'], par['dev_interpolation'])
     if q2Eyes:
-        llx, lly,llmissn = windowedInterpolate(data['L_X'], data['L_Y'], data['left_missing'], llmissStart, llmissEnd, par['edgeSampInterp'], par['dev_interpolation'])
-        rrx, rry,rrmissn = windowedInterpolate(data['R_X'], data['R_Y'], data['right_missing'], rrmissStart, rrmissEnd, par['edgeSampInterp'], par['dev_interpolation'])       
+        llx, lly,llmissn = windowed_interpolate(data['L_X'], data['L_Y'], data['left_missing'], llmissStart, llmissEnd, par['edgeSampInterp'], par['dev_interpolation'])
+        rrx, rry,rrmissn = windowed_interpolate(data['R_X'], data['R_Y'], data['right_missing'], rrmissStart, rrmissEnd, par['edgeSampInterp'], par['dev_interpolation'])       
         
     # =============================================================================
     # 2-MEANS CLUSTERING
