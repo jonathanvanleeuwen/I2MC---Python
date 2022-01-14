@@ -6,12 +6,20 @@ Created on Thu Sep 19 10:57:23 2019
 """
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import numpy as np
 
-def plotResults(data,fix,res=[1920,1080]):
-    '''
+def plotResults(data, fix, fix_as_line=True, res=None):
+    """
     Plots the results of the I2MC function
-    '''
+    fix_as_line: if true, fixations are drawn as lines, if
+    false as shaded areas
+    If the res parameter (screen resolution) is not provided,
+    a 1920x1080 pix screen is assumed
+    """
+
+    if res is None:
+        res = [1920, 1080]
     
     time = data['time']
     Xdat = np.array([])
@@ -42,38 +50,47 @@ def plotResults(data,fix,res=[1920,1080]):
     myfontsize = 10
     myLabelSize = 12
     traceLW = 0.5
-    fixLW= 2
     
     font = {'size': myfontsize}
     matplotlib.rc('font', **font)
     
     ## plot layout
-    f = plt.figure(figsize=(10, 6), dpi=300)
+    f   = plt.figure(figsize=(10, 6), dpi=300)
     ax1 = plt.subplot(2,1,1)
-    ### Plot x position
-    for p in range(Xdat.shape[0]):
-        ax1.plot(time,Xdat[p,:],klr[p]+'-', linewidth = traceLW)
-    
-    # add fixations
-    for b in range(len(fix['startT'])):
-        ax1.plot([fix['startT'][b], fix['endT'][b]], [fix['xpos'][b], fix['xpos'][b]],'k-', linewidth = fixLW)
-    
     ax1.set_ylabel('Horizontal position (pixels)', size = myLabelSize)
     ax1.set_xlim([0, time[-1]])
     ax1.set_ylim([0, res[0]])
 
-    ### Plot Y posiiton
-    ax2 = plt.subplot(2,1,2,sharex=ax1)
-    for p in range(Ydat.shape[0]):
-        ax2.plot(time,Ydat[p,:],klr[p]+'-', linewidth = traceLW)
-
-    # add fixations
-    for b in range(len(fix['startT'])):
-        ax2.plot([fix['startT'][b], fix['endT'][b]], [fix['ypos'][b], fix['ypos'][b]],'k-', linewidth = fixLW)
-    
+    ax2 = plt.subplot(2,1,2, sharex=ax1)
     ax2.set_xlabel('Time (ms)')
     ax2.set_ylabel('Vertical position (pixels)', size = myLabelSize)
     ax2.set_ylim([0, res[1]])
+
+    ### Plot X position
+    for p in range(Xdat.shape[0]):
+        ax1.plot(time,Xdat[p,:],klr[p]+'-', linewidth = traceLW)
+
+    ### Plot Y posiiton
+    for p in range(Ydat.shape[0]):
+        ax2.plot(time,Ydat[p,:],klr[p]+'-', linewidth = traceLW)
+    
+    # add fixations
+    if fix_as_line:
+        fixLW = 2
+        for b in range(len(fix['startT'])):
+            ax1.plot([fix['startT'][b], fix['endT'][b]], [fix['xpos'][b], fix['xpos'][b]],'k-', linewidth = fixLW)
+        for b in range(len(fix['startT'])):
+            ax2.plot([fix['startT'][b], fix['endT'][b]], [fix['ypos'][b], fix['ypos'][b]],'k-', linewidth = fixLW)
+    else:
+        for b in range(len(fix['startT'])):
+            ax1.add_patch(patches.Rectangle((fix['startT'][b], 0),
+                                            fix['endT'][b] - fix['startT'][b],
+                                            res[0], fill=True, color='0.7',
+                                            linewidth=0))
+            ax2.add_patch(patches.Rectangle((fix['startT'][b], 0),
+                                            fix['endT'][b] - fix['startT'][b],
+                                            res[1], fill=True, color='0.7',
+                                            linewidth=0))
 
     return f
 

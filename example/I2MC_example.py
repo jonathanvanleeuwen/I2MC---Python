@@ -208,7 +208,7 @@ for foldIdx, folder in enumerate(allFolders):
             if doPlotData:
                 # pre-allocate name for saving file
                 saveFile = outFold + os.sep+  os.path.splitext(file)[0]+'.png'
-                f = I2MC.plot.plotResults(data,fix,[opt['xres'], opt['yres']])
+                f = I2MC.plot.plotResults(data, fix, fix_as_line=False, res=[opt['xres'], opt['yres']])
                 # save figure and close
                 print('Saving image to: '+saveFile)
                 f.savefig(saveFile)
