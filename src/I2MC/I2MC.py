@@ -21,28 +21,6 @@ import matplotlib.patches as patches
 import copy
 import warnings
 
-# =============================================================================
-# # ToDo 
-# =============================================================================
-# General stuff 
-#- Check all the functions help text (type, description etc)
-
-# Functions (Interpolate)
-# - Can we use my implementation? not steffen
-
-# Functions (CLUSTERING)
-#- twoClusterWeighting
-#   - Downsampling
-#   - missing values handeling?
-#   - Edges and going back for the latest samples
-
-# Questions
-# When getting median gaze position (fixation), the inetrpolated values are ignored. 
-#   Is this intended, then whats the point of interpolaiton, besides the clustering?
-# Not all results are identical to matlab version
-#   for instance, trial 1 pp2, fix5 and 6 have a slight overlap
-#   pp2 trial 3,4 and 5 has a fixations thats to short compared to matlab (almost last fixation)
-
 
 # =============================================================================
 # Helper functions
