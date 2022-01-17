@@ -24,11 +24,11 @@ Note that this Python implementation may be slightly different from the MATLAB v
 The differences in output between the MATLAB and Python implementation of I2MC are visualized in Figure 1 and 2. As is visible from these Figures, slight differences in output between the MATLAB and Python implementations remain. As such, when using this Python implementation, please cite the original paper (see above) and mention that this Python implementation is used.
 
 
-![](Figure1.png)
+![](https://github.com/dcnieho/I2MC_Python/raw/master/Figure1.png)
 *Figure 1.* Number of fixations, mean fixation duration and *SD* of fixation duration for the MATLAB and Python I2MC implementations using the RMS noise data set from the original I2MC paper. I2MC is the original published version of I2MC. I2MC2019 is a slightly modified version (the latest version from the original I2MC repository as of this writing [v2.0.3]). _python stands for the Python implementation in this repository. _nc stands for No Chebychev filtering. For more information on this specific analysis see Figure 3 in the original I2MC paper and the corresponding text.
 
 
-![](Figure2.png)
+![](https://github.com/dcnieho/I2MC_Python/raw/master/Figure2.png)
 *Figure 2.* Classified fixations for episodes of example eye-tracking data using the MATLAB and Python I2MC implementations. I2MC is the original published version of I2MC. I2MC2019 is a slightly modified version (the latest version from the original I2MC repository as of this writing [v2.0.3]). _python stands from the Python implementation in this repository. _nc stands for No Chebychev filtering. For more information on this specific analysis see Figure 8 in the original I2MC paper and the corresponding text.
 
 
