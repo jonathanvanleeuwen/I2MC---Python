@@ -22,7 +22,7 @@ Created on Thu Sep 19 10:57:23 2019
 # Cite as:
 # Hessels, R.S., Niehorster, D.C., Kemner, C., & Hooge, I.T.C., (2017).
 # Noise-robust fixation detection in eye-movement data - Identification by 
-# 2-means clustering (I2MC). Behavior Research Methods, 49(5):1802–1823.
+# 2-means clustering (I2MC). Behavior Research Methods, 49(5):1802-1823.
 # 
 # For more information, questions, or to check whether we have updated to a
 # better version, see https://github.com/dcnieho/I2MC_Python. I2MC can be
@@ -159,7 +159,7 @@ for it in range(1,101):
         fix_file = os.path.join(folders['output'], 'allfixations_{}.txt'.format(it))
     else:
         if log_level>0:
-            print('Writing fixations to: "{}"'.format(fix_file))
+            print('Fixations will be stored to: "{}"'.format(fix_file))
         with open(fix_file, 'w+') as f:
             f.write(fix_file_header)
         break
@@ -167,37 +167,52 @@ for it in range(1,101):
 # =============================================================================
 # START ALGORITHM
 # =============================================================================
-for fold_idx, folder in enumerate(all_folders):
+for folder_idx, folder in enumerate(all_folders):
+    if log_level>0:
+        print('Processing folder {} of {}'.format(folder_idx + 1, number_of_folders))
+
     # make output folder
     if do_plot_data:
         outFold = os.path.join(folders['output'], (folder.split(os.sep)[-1]))
         if not os.path.isdir(outFold):
            os.mkdir(outFold)
 
-    if number_of_files[fold_idx] == 0:
+    if number_of_files[folder_idx] == 0:
         if log_level>0:
-            print('folder is empty, continuing to next folder')
+            print('  folder is empty, continuing to next folder')
         continue
     
-    for file_idx, file in enumerate(all_files[fold_idx]):
+    for file_idx, file in enumerate(all_files[folder_idx]):
+        if log_level>0:
+            print('  Processing file {} of {}'.format(file_idx + 1, number_of_files[folder_idx]))
+
         # Get current file name
         file_name = os.path.join(folder, file)
         ## IMPORT DATA
         if log_level>0:
-            if log_level>1:
-                print('\n')
-            print('\nImporting and processing: "{}"'.format(file_name))
+            print('    Loading data from: {}'.format(file_name))
         data = {}
         data['time'], data['L_X'], data['L_Y'], data['R_X'], data['R_Y'] = imp.import_tobii_TX300(file_name, 1, [opt['xres'], opt['yres']], opt['missingx'], opt['missingy'])
         
         # check whether we have data, if not, continue to next file
         if len(data['time']) == 0: 
             if log_level>0:
-                print('Empty file encountered, continuing to next file ')
+                print('    No data found in file')
             continue
         
         # RUN FIXATION DETECTION
-        fix,_,_ = I2MC.I2MC(data,opt,log_level==2,'\t')
+        if log_level>0:
+            print('    Running fixation classification...')
+        try:
+            fix,_,_ = I2MC.I2MC(data,opt,log_level==2,logging_offset="      ")
+        except Exception as e:
+            print('    Error in file {}: {}'.format(file_name, e))
+            continue
+
+        if not fix:
+            if log_level>0:
+                print('    Fixation classification did not succeed with file {}'.format(file_name))
+            continue
         
         if fix != False:
             ## PLOT RESULTS
@@ -207,7 +222,7 @@ for fold_idx, folder in enumerate(all_folders):
                 f = I2MC.plot.plot_data_and_fixations(data, fix, fix_as_line=True, res=[opt['xres'], opt['yres']])
                 # save figure and close
                 if log_level>0:
-                    print('Saving image to: '+save_file)
+                    print('    Saving image to: ' + save_file)
                 f.savefig(save_file)
                 plt.close(f)
                 
