@@ -1476,7 +1476,7 @@ def I2MC(gazeData, options = None, logging=True, logging_offset=""):
         # check whether clustering succeeded
         if stopped:
             warnings.warn('I2MC: Clustering stopped after exceeding max errors, continuing to next file \n')
-            return False
+            return False, None, None
         
     ## CALCULATE 2-MEANS CLUSTERING FOR SEPARATE EYES
     elif q2Eyes:
@@ -1491,7 +1491,7 @@ def I2MC(gazeData, options = None, logging=True, logging_offset=""):
         # check whether clustering succeeded
         if stopped:
             warnings.warn('I2MC: Clustering stopped after exceeding max errors, continuing to next file \n')
-            return False
+            return False, None, None
         
         # get kmeans-clustering for right eye signal
         if logging:
@@ -1504,7 +1504,7 @@ def I2MC(gazeData, options = None, logging=True, logging_offset=""):
         # check whether clustering succeeded
         if stopped:
             warnings.warn('I2MC: Clustering stopped after exceeding max errors, continuing to next file')
-            return False
+            return False, None, None
         
         ## AVERAGE FINALWEIGHTS OVER COMBINED & SEPARATE EYES
         with warnings.catch_warnings():
