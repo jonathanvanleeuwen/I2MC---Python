@@ -1101,9 +1101,9 @@ def get_fixations(final_weights, timestamp, xpos, ypos, missing, par):
     fix['cutoff'] = cutoff
     fix['start'] = fixstart
     fix['end'] = fixend
-    fix['startT'] = starttime
-    fix['endT'] = endtime
-    fix['dur'] = fixdur
+    fix['startT'] = np.array(starttime)
+    fix['endT'] = np.array(endtime)
+    fix['dur'] = np.array(fixdur)
     fix['xpos'] = xmedian
     fix['ypos'] = ymedian
     fix['flankdataloss'] = flankdataloss
