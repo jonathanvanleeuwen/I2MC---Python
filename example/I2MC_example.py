@@ -60,6 +60,7 @@ Created on Thu Sep 19 10:57:23 2019
 # =============================================================================
 import os
 import sys
+import pandas as pd
 import numpy as np
 import import_funcs as imp
 try:
@@ -132,8 +133,6 @@ opt['maxMergeDist']         = 30.0                          # maximum Euclidean 
 opt['maxMergeTime']         = 30.0                          # maximum time in ms between fixations for merging
 opt['minFixDur']            = 40.0                          # minimum fixation duration after merging, fixations with shorter duration are removed from output
 
-# Save file
-sep = '\t' # The value separator
 
 # =============================================================================
 # SETUP directory handling
@@ -153,15 +152,12 @@ number_of_files = [len(f) for f in all_files]
 
 # Write the final fixation output file 
 fix_file = os.path.join(folders['output'], 'allfixations.txt')
-fix_file_header = 'FixStart{sep}FixEnd{sep}FixDur{sep}XPos{sep}YPos{sep}FlankedByDataLoss{sep}Fraction Interpolated{sep}WeightCutoff{sep}RMSxy{sep}BCEA{sep}FixRangeX{sep}FixRangeY{sep}Participant{sep}Trial\n'.format(sep=sep)
 for it in range(1,101):
     if os.path.isfile(fix_file) and it < 100:
         fix_file = os.path.join(folders['output'], 'allfixations_{}.txt'.format(it))
     else:
         if log_level>0:
             print('Fixations will be stored to: "{}"'.format(fix_file))
-        with open(fix_file, 'w+') as f:
-            f.write(fix_file_header)
         break
     
 # =============================================================================
@@ -225,20 +221,11 @@ for folder_idx, folder in enumerate(all_folders):
                 f.savefig(save_file)
                 plt.close(f)
                 
-            # Write data to string 
-            fix_info = ''
-            for t in range(len(fix['start'])):            
-                fix_info += '{:0.3f}{sep}{:0.3f}{sep}{:0.3f}{sep}{:0.3f}{sep}{:0.3f}{sep}'\
-                '{:0.3f}{sep}{:0.3f}{sep}{:0.3f}{sep}{:0.3f}{sep}{:0.3f}{sep}{:0.3f}{sep}'\
-                '{:0.3f}{sep}{}{sep}{}\n'.format(\
-                fix['startT'][t], fix['endT'][t], fix['dur'][t], fix['xpos'][t],\
-                fix['ypos'][t], fix['flankdataloss'][t], fix['fracinterped'][t],\
-                fix['cutoff'], fix['RMSxy'][t], fix['BCEA'][t],\
-                fix['fixRangeX'][t], fix['fixRangeY'][t],\
-                folder.split(os.sep)[-1], os.path.splitext(file)[0], sep=sep)
-                
-            # Write string to file
-            with open(fix_file, 'a+') as f:
-                f.write(fix_info)
+            # Write data to file
+            fix['participant'] = folder.split(os.sep)[-1]
+            fix['trial'] = os.path.splitext(file)[0]
+            fix_df = pd.DataFrame(fix)
+            fix_df.to_csv(fix_file, mode='a', header=not os.path.exists(fix_file),
+                          na_rep='nan', sep='\t', index=False, float_format='%.3f')
 
 print('\n\nI2MC took {}s to finish!'.format(time.time()-start))
