@@ -5,6 +5,7 @@ Created on Thu Sep 19 10:54:00 2019
 @author: Jonathan van Leeuwen, Diederick Niehorster
 """
 
+import pandas as pd
 import numpy as np
 import math
 import scipy
@@ -1254,14 +1255,16 @@ def I2MC(gazeData, options = None, logging=True, logging_offset=""):
     Parameters
     ----------
     @param gazeData: a dataframe containing the gaze data
-        the dataframe should contain the following columns (either L, R or both or average):
+        the dataframe should contain the following column:
+            time        - time of the gaze sample (ms)
+        and the dataframe should furthermore contain at least some of the
+        following columns of eye data (either L, or R, or both L and R, or average):
             L_X         - left eye x position
             L_Y         - left eye y position
             R_X         - right eye x position
             R_Y         - right eye y position
             average_X   - average x position
             average_Y   - average y position
-            time        - time of the gaze sample
     @param options: a dictionary containing the options for the I2MC analysis
         the dictionary should contain the following keys:
             x_res        - x resolution of the screen in pixels
@@ -1295,8 +1298,14 @@ def I2MC(gazeData, options = None, logging=True, logging_offset=""):
     # set defaults
     if options is None:
         options = {}
-    data = copy.deepcopy(gazeData)
     opt  = options.copy()
+
+    if isinstance(gazeData,dict):
+        # for backward compatibility, convert to pd.DataFrame
+        data = pd.DataFrame.from_dict(gazeData)
+    else:
+        data = copy.deepcopy(gazeData)
+
     par  = {}
     
     # Check required parameters 
@@ -1393,8 +1402,8 @@ def I2MC(gazeData, options = None, logging=True, logging_offset=""):
     # =============================================================================
     # deal with monocular data, or create average over two eyes
     if 'L_X' in data.keys() and 'R_X' not in data.keys():
-        xpos = data['L_X']
-        ypos = data['L_Y']
+        xpos = data['L_X'].array
+        ypos = data['L_Y'].array
         # Check for missing values
         missing_x = np.logical_or(np.isnan(xpos), xpos == par['missingx'])
         missing_y = np.logical_or(np.isnan(ypos), ypos == par['missingy'])
@@ -1403,20 +1412,20 @@ def I2MC(gazeData, options = None, logging=True, logging_offset=""):
         q2Eyes = False
         
     elif 'R_X' in data.keys() and 'L_X' not in data.keys():
-        xpos = data['R_X']
-        ypos = data['R_Y']
+        xpos = data['R_X'].array
+        ypos = data['R_Y'].array
         # Check for missing values
         missing_x = np.logical_or(np.isnan(xpos), xpos == par['missingx'])
-        missing_y = np.logical_or(np.isnan(ypos) , ypos == par['missingy'])
+        missing_y = np.logical_or(np.isnan(ypos), ypos == par['missingy'])
         missing = np.logical_or(missing_x, missing_y)
         data['right_missing'] = missing
         q2Eyes = False
         
     elif 'average_X' in data.keys():
-        xpos = data['average_X']
-        ypos = data['average_Y']
+        xpos = data['average_X'].array
+        ypos = data['average_Y'].array
         missing_x = np.logical_or(np.isnan(xpos), xpos == par['missingx'])
-        missing_y = np.logical_or(np.isnan(ypos) , ypos == par['missingy'])
+        missing_y = np.logical_or(np.isnan(ypos), ypos == par['missingy'])
         missing = np.logical_or(missing_x, missing_y)
         data['average_missing'] = missing
         q2Eyes = 'R_X' in data.keys() and 'L_X' in data.keys()
@@ -1428,9 +1437,9 @@ def I2MC(gazeData, options = None, logging=True, logging_offset=""):
             data['right_missing'] = rrmiss
         
     else: # we have left and right, average them
-        data['average_X'], data['average_Y'], missing, llmiss, rrmiss = average_eyes(data['L_X'], data['R_X'], par['missingx'], data['L_Y'], data['R_Y'], par['missingy'])
-        xpos = data['average_X']
-        ypos = data['average_Y']
+        data['average_X'], data['average_Y'], missing, llmiss, rrmiss = average_eyes(data['L_X'].array, data['R_X'].array, par['missingx'], data['L_Y'].array, data['R_Y'].array, par['missingy'])
+        xpos = data['average_X'].array
+        ypos = data['average_Y'].array
         data['average_missing'] = missing
         data['left_missing']  = llmiss
         data['right_missing'] = rrmiss
@@ -1445,9 +1454,9 @@ def I2MC(gazeData, options = None, logging=True, logging_offset=""):
     missStart,missEnd = find_interp_wins(xpos, ypos, missing, par['windowtimeInterp'],
                                          par['edgeSampInterp'], par['freq'], par['maxdisp'])
     if q2Eyes:
-        llmissStart,llmissEnd = find_interp_wins(data['L_X'], data['L_Y'], llmiss, par['windowtimeInterp'],
+        llmissStart,llmissEnd = find_interp_wins(data['L_X'].array, data['L_Y'].array, llmiss, par['windowtimeInterp'],
                                                  par['edgeSampInterp'], par['freq'], par['maxdisp'])
-        rrmissStart,rrmissEnd = find_interp_wins(data['R_X'], data['R_Y'], rrmiss, par['windowtimeInterp'],
+        rrmissStart,rrmissEnd = find_interp_wins(data['R_X'].array, data['R_Y'].array, rrmiss, par['windowtimeInterp'],
                                                  par['edgeSampInterp'], par['freq'], par['maxdisp'])
     
     # Use Steffen interpolation and replace values
@@ -1455,9 +1464,9 @@ def I2MC(gazeData, options = None, logging=True, logging_offset=""):
         print(logging_offset + 'I2MC: Replace interpolation windows with Steffen interpolation')
     xpos, ypos, missingn = windowed_interpolate(xpos, ypos, missing, missStart, missEnd, par['edgeSampInterp'])
     if q2Eyes:
-        llx, lly,llmissn = windowed_interpolate(data['L_X'], data['L_Y'], data['left_missing'],
+        llx, lly,llmissn = windowed_interpolate(data['L_X'].array, data['L_Y'].array, data['left_missing'].array,
                                                 llmissStart, llmissEnd, par['edgeSampInterp'])
-        rrx, rry,rrmissn = windowed_interpolate(data['R_X'], data['R_Y'], data['right_missing'],
+        rrx, rry,rrmissn = windowed_interpolate(data['R_X'].array, data['R_Y'].array, data['right_missing'].array,
                                                 rrmissStart, rrmissEnd, par['edgeSampInterp'])       
         
     # =============================================================================
@@ -1516,7 +1525,7 @@ def I2MC(gazeData, options = None, logging=True, logging_offset=""):
     # =============================================================================
     if logging:
         print(logging_offset + 'I2MC: Determining fixations based on clustering weight mean for averaged signal and separate eyes + {:.2f}*std'.format(par['cutoffstd']))
-    fix = get_fixations(data['finalweights'], data['time'], xpos, ypos, missing, par)
+    fix = get_fixations(data['finalweights'].array, data['time'].array, xpos, ypos, missing, par)
     fix = get_fix_stats(xpos, ypos, missing, fix, pix_per_deg)
   
     return fix,data,par
