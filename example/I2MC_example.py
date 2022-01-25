@@ -191,7 +191,7 @@ for folder_idx, folder in enumerate(all_folders):
         ## IMPORT DATA
         if log_level>0:
             print('    Loading data from: {}'.format(file_name))
-        data = imp.import_tobii_TX300(file_name, [opt['xres'], opt['yres']])
+        data = imp.tobii_TX300(file_name, [opt['xres'], opt['yres']])
         
         # check whether we have data, if not, continue to next file
         if len(data['time']) == 0: 
@@ -218,7 +218,7 @@ for folder_idx, folder in enumerate(all_folders):
             if do_plot_data:
                 # pre-allocate name for saving file
                 save_file = os.path.join(outFold, os.path.splitext(file)[0]+'.png')
-                f = I2MC.plot.plot_data_and_fixations(data, fix, fix_as_line=True, res=[opt['xres'], opt['yres']])
+                f = I2MC.plot.data_and_fixations(data, fix, fix_as_line=True, res=[opt['xres'], opt['yres']])
                 # save figure and close
                 if log_level>0:
                     print('    Saving image to: ' + save_file)

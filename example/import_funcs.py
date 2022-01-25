@@ -15,7 +15,7 @@ import pandas as pd
 # =============================================================================
 # Import Titta
 # =============================================================================
-def import_Titta(fname, res=[1920,1080]):
+def Titta(fname, res=[1920,1080]):
     '''
     Imports data from tsv files produced by Titta. 
     
@@ -57,7 +57,7 @@ def import_Titta(fname, res=[1920,1080]):
 # =============================================================================
 # Import Tobii TX300
 # =============================================================================
-def import_tobii_TX300(fname, res=[1920,1080]):
+def tobii_TX300(fname, res=[1920,1080]):
     '''
     Imports data from Tobii TX300 as returned by Tobii SDK. 
     
