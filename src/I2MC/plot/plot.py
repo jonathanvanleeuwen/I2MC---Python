@@ -8,6 +8,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
+import pandas as pd
 
 def plot_data_and_fixations(data, fix, fix_as_line=True, res=None):
     """
@@ -20,30 +21,34 @@ def plot_data_and_fixations(data, fix, fix_as_line=True, res=None):
 
     if res is None:
         res = [1920, 1080]
+
+    if isinstance(data,dict):
+        # for backward compatibility, convert to pd.DataFrame
+        data = pd.DataFrame.from_dict(data)
     
-    time = data['time']
+    time = data['time'].array
     Xdat = np.array([])
     Ydat = np.array([])
     klr  = []
     if 'L_X' in data.keys():
-        Xdat = data['L_X']
-        Ydat = data['L_Y']
+        Xdat = data['L_X'].array
+        Ydat = data['L_Y'].array
         klr.append('g')
     if 'R_X' in data.keys():
         if len(Xdat) == 0:
-            Xdat = data['R_X']
-            Ydat = data['R_Y']
+            Xdat = data['R_X'].array
+            Ydat = data['R_Y'].array
         else:
-            Xdat = np.vstack([Xdat, data['R_X']])
-            Ydat = np.vstack([Ydat, data['R_Y']])
+            Xdat = np.vstack([Xdat, data['R_X'].array])
+            Ydat = np.vstack([Ydat, data['R_Y'].array])
         klr.append('r')
-    if 'average_X' in data.keys() and not 'L_X' in data.keys() and not 'R_X' in data.keys():
+    if 'average_X' in data.keys() and 'L_X' not in data.keys() and 'R_X' not in data.keys():
         if len(Xdat) == 0:
-            Xdat = data['average_X']
-            Ydat = data['average_Y']
+            Xdat = data['average_X'].array
+            Ydat = data['average_Y'].array
         else:
-            Xdat = np.vstack([Xdat, data['average_X']])
-            Ydat = np.vstack([Ydat, data['average_Y']])
+            Xdat = np.vstack([Xdat, data['average_X'].array])
+            Ydat = np.vstack([Ydat, data['average_Y'].array])
         klr.append('b')   
     
     # Plot settings
