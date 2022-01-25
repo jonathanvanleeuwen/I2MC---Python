@@ -191,8 +191,7 @@ for folder_idx, folder in enumerate(all_folders):
         ## IMPORT DATA
         if log_level>0:
             print('    Loading data from: {}'.format(file_name))
-        data = {}
-        data['time'], data['L_X'], data['L_Y'], data['R_X'], data['R_Y'] = imp.import_tobii_TX300(file_name, 1, [opt['xres'], opt['yres']], opt['missingx'], opt['missingy'])
+        data = imp.import_tobii_TX300(file_name, [opt['xres'], opt['yres']])
         
         # check whether we have data, if not, continue to next file
         if len(data['time']) == 0: 
