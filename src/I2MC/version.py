@@ -1,4 +1,4 @@
-__version__ = "2.1.0"
+__version__ = "2.1.1"
 
 __title__ = "I2MC"
 __description__ = "Noise-robust fixation classification (I2MC)."
