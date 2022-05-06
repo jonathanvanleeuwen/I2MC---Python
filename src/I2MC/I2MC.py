@@ -825,7 +825,7 @@ def two_cluster_weighting(xpos, ypos, missing, downsamples, downsamp_filter, che
         # get nearest samples of switch and add weight
         weighted = np.hstack([switches[0]*switchesw[0],0])
         for p in range(nd):
-            j = np.array((np.argwhere(switches[p+1]).flatten()+1)*downsamples[p],dtype=int)-1
+            j = idxs[p][np.argwhere(switches[p+1]).flatten()]
             for o in range(int(downsamples[p])):
                 weighted[j+o] = weighted[j+o] + switchesw[p+1]
         
