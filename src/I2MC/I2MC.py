@@ -816,11 +816,11 @@ def two_cluster_weighting(xpos, ypos, missing, downsamples, downsamp_filter, che
         
         # detect switches and weight of switch (= 1/number of switches in
         # portion)
-        switches = [[] for p in range(nd+1)]
-        switchesw = [[] for p in range(nd+1)]
+        switches  = [[] for p in range(nd+1)]
+        switchesw = np.empty(nd+1)
         for p in range(nd+1):
             switches[p] = np.abs(np.diff(IDL_d[p]))
-            switchesw[p]  = 1./np.sum(switches[p])
+            switchesw[p]= 1./np.sum(switches[p])
            
         # get nearest samples of switch and add weight
         weighted = np.hstack([switches[0]*switchesw[0],0])
