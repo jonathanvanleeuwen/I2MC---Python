@@ -796,7 +796,7 @@ def two_cluster_weighting(xpos, ypos, missing, downsamples, downsamp_filter, che
         # end of window
         for p in range(nd):
             if downsamp_filter:
-                ll_d[p+1] = scipy.signal.filtfilt(b[p],a[p],ll_d[0])
+                ll_d[p+1] = scipy.signal.filtfilt(b[p],a[p],ll_d[0], padlen=3*(max(len(b[p]),len(a[p]))-1)) # adjust default padlen to match matlab's filtfilt
                 ll_d[p+1] = ll_d[p+1][:,idxs[p]]
             else:
                 ll_d[p+1] = ll_d[0][:,idxs[p]]
