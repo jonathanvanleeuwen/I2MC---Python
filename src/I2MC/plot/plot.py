@@ -73,11 +73,11 @@ def data_and_fixations(data, fix, fix_as_line=True, res=None):
 
     ### Plot X position
     for p in range(Xdat.shape[0]):
-        ax1.plot(time,Xdat[p,:],klr[p]+'-', linewidth = traceLW)
+        ax1.plot(np.array(time),Xdat[p,:],klr[p]+'-', linewidth = traceLW)
 
     ### Plot Y posiiton
     for p in range(Ydat.shape[0]):
-        ax2.plot(time,Ydat[p,:],klr[p]+'-', linewidth = traceLW)
+        ax2.plot(np.array(time),Ydat[p,:],klr[p]+'-', linewidth = traceLW)
     
     # add fixations
     if fix_as_line:
