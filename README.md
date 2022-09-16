@@ -15,6 +15,15 @@ Most parts of the I2MC algorithm are licensed under the Creative Commons Attribu
 
 ## About this implementation
 
+Install using:
+```
+pip install I2MC
+```
+or
+```
+python -m pip install I2MC
+```
+
 This is a Python implementation of the I2MC algorithm (tested on version Python 3.8). For the original Matlab implementation see https://github.com/royhessels/I2MC
 
 Most functions were initially ported to Python by Jonathan van Leeuwen. Diederick Niehorster and Roy Hessels updated a few functions to match the MATLAB version more closely and ported what remained.
